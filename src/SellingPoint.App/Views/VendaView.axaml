@@ -1,0 +1,258 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SellingPoint.App.ViewModels"
+             x:Class="SellingPoint.App.Views.VendaView"
+             x:DataType="vm:VendaViewModel">
+
+  <UserControl.Styles>
+    <Style Selector="Button.produto">
+      <Setter Property="Width" Value="158" />
+      <Setter Property="Height" Value="96" />
+      <Setter Property="Margin" Value="0,0,10,10" />
+      <Setter Property="Padding" Value="10" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Button.tecla">
+      <Setter Property="Width" Value="86" />
+      <Setter Property="Height" Value="64" />
+      <Setter Property="Margin" Value="4" />
+      <Setter Property="FontSize" Value="22" />
+    </Style>
+    <Style Selector="Border.painel">
+      <Setter Property="Background" Value="{DynamicResource SystemChromeMediumLowColor}" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="24" />
+      <Setter Property="MinWidth" Value="420" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="BoxShadow" Value="0 8 32 0 #40000000" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid>
+    <Grid RowDefinitions="Auto,*,Auto">
+
+      <!-- Session bar -->
+      <Border Grid.Row="0" Padding="12,8" Background="{DynamicResource SystemChromeLowColor}">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+          <TextBlock Grid.Column="0" Text="{Binding SessionText}" VerticalAlignment="Center"
+                     FontWeight="SemiBold" />
+          <Button Grid.Column="2" Content="Abrir sessão" Margin="8,0"
+                  IsVisible="{Binding !HasOpenSession}"
+                  Command="{Binding OpenSessionPanelCommand}" />
+          <ToggleButton Grid.Column="3" Content="Ver talão"
+                        IsChecked="{Binding IsPreviewVisible}"
+                        Command="{Binding TogglePreviewCommand}" />
+        </Grid>
+      </Border>
+
+      <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto">
+
+        <!-- Categories and products -->
+        <Grid Grid.Column="0" RowDefinitions="Auto,*" Margin="12">
+          <ListBox Grid.Row="0" ItemsSource="{Binding Categories}"
+                   SelectedItem="{Binding SelectedCategory}"
+                   Background="Transparent" BorderThickness="0" Margin="0,0,0,12">
+            <ListBox.ItemsPanel>
+              <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:CategoryTabViewModel">
+                <Border Background="{Binding Background}" CornerRadius="6" Padding="18,10" Margin="0,0,8,0">
+                  <TextBlock Text="{Binding Name}" Foreground="White" FontSize="17" FontWeight="SemiBold" />
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <ScrollViewer Grid.Row="1">
+            <ItemsControl ItemsSource="{Binding Products}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ProductButtonViewModel">
+                  <Button Classes="produto" Command="{Binding PressCommand}"
+                          Background="{Binding Background}" Opacity="{Binding Opacity}">
+                    <Grid RowDefinitions="*,Auto">
+                      <TextBlock Grid.Row="0" Text="{Binding Name}" FontSize="16" FontWeight="SemiBold"
+                                 TextWrapping="Wrap" />
+                      <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="{Binding PriceText}" FontSize="18" />
+                        <Border Grid.Column="1" Background="#40000000" CornerRadius="4" Padding="6,1"
+                                IsVisible="{Binding ShowStock}">
+                          <TextBlock Text="{Binding StockText}" FontSize="12" />
+                        </Border>
+                      </Grid>
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Grid>
+
+        <!-- Cart -->
+        <Border Grid.Column="1" Width="360" Margin="0,12,12,12" Padding="12"
+                Background="{DynamicResource SystemChromeLowColor}" CornerRadius="10">
+          <Grid RowDefinitions="Auto,*,Auto,Auto">
+            <TextBlock Grid.Row="0" Text="CARRINHO" FontWeight="Bold" Margin="0,0,0,10" />
+
+            <ScrollViewer Grid.Row="1">
+              <ItemsControl ItemsSource="{Binding CartLines}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:CartLineViewModel">
+                    <Border Padding="6" Margin="0,0,0,4" CornerRadius="6"
+                            Background="{DynamicResource SystemChromeMediumLowColor}">
+                      <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding QtyText}"
+                                   FontWeight="Bold" Width="36" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Name}" TextWrapping="Wrap" />
+                        <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding TotalText}" FontWeight="SemiBold" />
+
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding UnitText}"
+                                   FontSize="11" Opacity="0.6" />
+                        <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" Spacing="4"
+                                    HorizontalAlignment="Right">
+                          <Button Content="−" Width="34" Command="{Binding DecrementCommand}" />
+                          <Button Content="+" Width="34" Command="{Binding IncrementCommand}" />
+                          <Button Content="✕" Width="34" Command="{Binding RemoveCommand}" />
+                        </StackPanel>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+
+            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,12,0,8">
+              <TextBlock Grid.Column="0" Text="TOTAL" FontSize="22" FontWeight="Bold" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding TotalText}" FontSize="30" FontWeight="Bold" />
+            </Grid>
+
+            <StackPanel Grid.Row="3" Spacing="6">
+              <Grid ColumnDefinitions="*,*" >
+                <Button Grid.Column="0" Content="Limpar" HorizontalAlignment="Stretch" Height="44"
+                        Margin="0,0,3,0" Command="{Binding ClearCartCommand}"
+                        IsEnabled="{Binding !IsCartEmpty}" />
+                <Button Grid.Column="1" Content="Reimprimir" HorizontalAlignment="Stretch" Height="44"
+                        Margin="3,0,0,0" Command="{Binding ReprintLastCommand}"
+                        IsEnabled="{Binding CanReprint}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,*">
+                <Button Grid.Column="0" Content="Dinheiro" HorizontalAlignment="Stretch" Height="60"
+                        FontSize="19" FontWeight="Bold" Margin="0,0,3,0"
+                        Background="#2E7D32" Foreground="White"
+                        Command="{Binding OpenCashPanelCommand}"
+                        IsEnabled="{Binding !IsCartEmpty}" />
+                <Button Grid.Column="1" Content="Cartão" HorizontalAlignment="Stretch" Height="60"
+                        FontSize="19" FontWeight="Bold" Margin="3,0,0,0"
+                        Background="#1565C0" Foreground="White"
+                        Command="{Binding PayCardCommand}"
+                        IsEnabled="{Binding !IsCartEmpty}" />
+              </Grid>
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <!-- Ticket preview -->
+        <Border Grid.Column="2" Width="400" Margin="0,12,12,12" Padding="12" CornerRadius="10"
+                Background="#1A1A1A" IsVisible="{Binding IsPreviewVisible}">
+          <Grid RowDefinitions="Auto,*">
+            <TextBlock Grid.Row="0" Text="TALÃO" FontWeight="Bold" Foreground="#AAAAAA" Margin="0,0,0,8" />
+            <ScrollViewer Grid.Row="1">
+              <TextBlock Text="{Binding PreviewText}" FontFamily="Menlo,Consolas,monospace"
+                         FontSize="12" Foreground="#DDDDDD" />
+            </ScrollViewer>
+          </Grid>
+        </Border>
+      </Grid>
+
+      <Border Grid.Row="2" Padding="12,8" Background="{DynamicResource SystemChromeLowColor}">
+        <TextBlock Text="{Binding StatusMessage}" FontSize="14" />
+      </Border>
+    </Grid>
+
+    <!-- Cash overlay -->
+    <Grid Background="#B0000000" IsVisible="{Binding IsCashPanelOpen}">
+      <Border Classes="painel">
+        <StackPanel Spacing="12">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Grid.Column="0" Text="A pagar" FontSize="18" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{Binding TotalText}" FontSize="30" FontWeight="Bold" />
+          </Grid>
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Grid.Column="0" Text="Recebido" FontSize="18" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{Binding CashReceivedText}" FontSize="30" />
+          </Grid>
+          <Border Background="#2E7D32" CornerRadius="6" Padding="12,8">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="TROCO" FontSize="20" FontWeight="Bold" Foreground="White"
+                         VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding ChangeText}" FontSize="34" FontWeight="Bold"
+                         Foreground="White" />
+            </Grid>
+          </Border>
+
+          <ItemsControl ItemsSource="{Binding QuickTenders}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:QuickTenderViewModel">
+                <Button Content="{Binding Label}" Command="{Binding PressCommand}"
+                        Height="48" MinWidth="96" Margin="0,0,6,6" FontSize="16" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <WrapPanel MaxWidth="290" HorizontalAlignment="Center">
+            <Button Classes="tecla" Content="1" Command="{Binding CashDigitCommand}" CommandParameter="1" />
+            <Button Classes="tecla" Content="2" Command="{Binding CashDigitCommand}" CommandParameter="2" />
+            <Button Classes="tecla" Content="3" Command="{Binding CashDigitCommand}" CommandParameter="3" />
+            <Button Classes="tecla" Content="4" Command="{Binding CashDigitCommand}" CommandParameter="4" />
+            <Button Classes="tecla" Content="5" Command="{Binding CashDigitCommand}" CommandParameter="5" />
+            <Button Classes="tecla" Content="6" Command="{Binding CashDigitCommand}" CommandParameter="6" />
+            <Button Classes="tecla" Content="7" Command="{Binding CashDigitCommand}" CommandParameter="7" />
+            <Button Classes="tecla" Content="8" Command="{Binding CashDigitCommand}" CommandParameter="8" />
+            <Button Classes="tecla" Content="9" Command="{Binding CashDigitCommand}" CommandParameter="9" />
+            <Button Classes="tecla" Content="0" Command="{Binding CashDigitCommand}" CommandParameter="0" />
+            <Button Classes="tecla" Content="00" Command="{Binding CashDigitCommand}" CommandParameter="00" />
+            <Button Classes="tecla" Content="C" Command="{Binding CashClearCommand}" />
+          </WrapPanel>
+
+          <Grid ColumnDefinitions="*,*">
+            <Button Grid.Column="0" Content="Cancelar" Height="52" HorizontalAlignment="Stretch"
+                    Margin="0,0,4,0" Command="{Binding CloseCashPanelCommand}" />
+            <Button Grid.Column="1" Content="Confirmar e imprimir" Height="52" HorizontalAlignment="Stretch"
+                    Margin="4,0,0,0" FontWeight="Bold" Background="#2E7D32" Foreground="White"
+                    Command="{Binding ConfirmCashCommand}" IsEnabled="{Binding CanConfirmCash}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <!-- Open-session overlay -->
+    <Grid Background="#B0000000" IsVisible="{Binding IsSessionPanelOpen}">
+      <Border Classes="painel">
+        <StackPanel Spacing="12">
+          <TextBlock Text="Abrir sessão" FontSize="22" FontWeight="Bold" />
+          <TextBlock Text="Nome" Opacity="0.7" />
+          <TextBox Text="{Binding SessionNameEntry}" FontSize="17" />
+          <TextBlock Text="Fundo de caixa (opcional)" Opacity="0.7" />
+          <TextBox Text="{Binding SessionFloatEntry}" PlaceholderText="0,00" FontSize="17" />
+          <Grid ColumnDefinitions="*,*">
+            <Button Grid.Column="0" Content="Cancelar" Height="48" HorizontalAlignment="Stretch"
+                    Margin="0,0,4,0" Command="{Binding CloseSessionPanelCommand}" />
+            <Button Grid.Column="1" Content="Abrir" Height="48" HorizontalAlignment="Stretch"
+                    Margin="4,0,0,0" FontWeight="Bold" Background="#2E7D32" Foreground="White"
+                    Command="{Binding ConfirmOpenSessionCommand}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

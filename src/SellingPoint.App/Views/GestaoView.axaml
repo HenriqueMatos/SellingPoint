@@ -1,0 +1,157 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SellingPoint.App.ViewModels"
+             x:Class="SellingPoint.App.Views.GestaoView"
+             x:DataType="vm:GestaoViewModel">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock.rotulo">
+      <Setter Property="Opacity" Value="0.7" />
+      <Setter Property="Margin" Value="0,8,0,2" />
+    </Style>
+    <Style Selector="Border.forma">
+      <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="16" />
+      <Setter Property="Margin" Value="12" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="*,Auto">
+    <TabControl Grid.Row="0">
+
+      <!-- Categories -->
+      <TabItem Header="Categorias">
+        <Grid ColumnDefinitions="360,*">
+          <Border Grid.Column="0" Classes="forma">
+            <Grid RowDefinitions="*,Auto">
+              <ListBox Grid.Row="0" ItemsSource="{Binding CategoryRows}"
+                       SelectedItem="{Binding SelectedCategory}" Background="Transparent">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:CategoryRowViewModel">
+                    <StackPanel Margin="0,4">
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="15" />
+                      <TextBlock Text="{Binding Detail}" FontSize="11" Opacity="0.6" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,10,0,0">
+                <Button Content="Nova" Command="{Binding NewCategoryCommand}" />
+                <Button Content="↑" Width="44" Command="{Binding MoveCategoryUpCommand}" />
+                <Button Content="↓" Width="44" Command="{Binding MoveCategoryDownCommand}" />
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <Border Grid.Column="1" Classes="forma">
+            <ScrollViewer>
+              <StackPanel MaxWidth="520" HorizontalAlignment="Left">
+                <TextBlock Text="Nome" Classes="rotulo" />
+                <TextBox Text="{Binding CategoryName}" FontSize="16" />
+
+                <TextBlock Text="Cor do botão" Classes="rotulo" />
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBox Grid.Column="0" Text="{Binding CategoryColor}" FontSize="16" />
+                  <Border Grid.Column="1" Width="48" Margin="8,0,0,0" CornerRadius="6"
+                          Background="{Binding CategoryColor}" />
+                </Grid>
+
+                <TextBlock Text="Grupo de impressão" Classes="rotulo" />
+                <ComboBox ItemsSource="{Binding PrintGroups}" SelectedItem="{Binding CategoryPrintGroup}"
+                          HorizontalAlignment="Stretch" FontSize="16" />
+                <TextBox Text="{Binding CategoryPrintGroup}" Margin="0,6,0,0" FontSize="16"
+                         PlaceholderText="ou escreva um grupo novo" />
+                <TextBlock TextWrapping="Wrap" FontSize="12" Opacity="0.6" Margin="0,6,0,0"
+                           Text="Categorias com o mesmo grupo saem no mesmo talão. Grupos diferentes saem em talões separados — por exemplo Bebidas e Sobremesas em &quot;Bar&quot;, Comida em &quot;Cozinha&quot;." />
+
+                <CheckBox IsChecked="{Binding CategoryPerUnit}" Margin="0,14,0,0"
+                          Content="Uma senha por unidade" />
+                <TextBlock TextWrapping="Wrap" FontSize="12" Opacity="0.6"
+                           Text="Ligado: 3 cervejas imprimem 3 senhas. Desligado: sai uma linha &quot;3x Cerveja&quot; no talão do grupo." />
+
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,20,0,0">
+                  <Button Content="Guardar" FontWeight="Bold" Background="#2E7D32" Foreground="White"
+                          Height="44" Width="130" Command="{Binding SaveCategoryCommand}" />
+                  <Button Content="Apagar" Height="44" Width="110"
+                          Command="{Binding DeleteCategoryCommand}" />
+                </StackPanel>
+              </StackPanel>
+            </ScrollViewer>
+          </Border>
+        </Grid>
+      </TabItem>
+
+      <!-- Products -->
+      <TabItem Header="Produtos">
+        <Grid ColumnDefinitions="360,*">
+          <Border Grid.Column="0" Classes="forma">
+            <Grid RowDefinitions="*,Auto">
+              <ListBox Grid.Row="0" ItemsSource="{Binding ProductRows}"
+                       SelectedItem="{Binding SelectedProduct}" Background="Transparent">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ProductRowViewModel">
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,4" Opacity="{Binding Opacity}">
+                      <StackPanel Grid.Column="0">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="15" />
+                        <TextBlock Text="{Binding Detail}" FontSize="11" Opacity="0.6" />
+                      </StackPanel>
+                      <TextBlock Grid.Column="1" Text="{Binding PriceText}" FontSize="15"
+                                 VerticalAlignment="Center" />
+                    </Grid>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,10,0,0">
+                <Button Content="Novo" Command="{Binding NewProductCommand}" />
+                <Button Content="↑" Width="44" Command="{Binding MoveProductUpCommand}" />
+                <Button Content="↓" Width="44" Command="{Binding MoveProductDownCommand}" />
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <Border Grid.Column="1" Classes="forma">
+            <ScrollViewer>
+              <StackPanel MaxWidth="520" HorizontalAlignment="Left">
+                <TextBlock Text="Nome" Classes="rotulo" />
+                <TextBox Text="{Binding ProductName}" FontSize="16" />
+
+                <TextBlock Text="Preço" Classes="rotulo" />
+                <TextBox Text="{Binding ProductPrice}" PlaceholderText="1,50" FontSize="16" />
+
+                <TextBlock Text="Categoria" Classes="rotulo" />
+                <ComboBox ItemsSource="{Binding CategoryChoices}" SelectedItem="{Binding ProductCategory}"
+                          HorizontalAlignment="Stretch" FontSize="16">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CategoryRowViewModel">
+                      <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <CheckBox IsChecked="{Binding ProductActive}" Margin="0,16,0,0"
+                          Content="Ativo (aparece na venda)" />
+                <CheckBox IsChecked="{Binding ProductTrackStock}" Content="Controlar stock" />
+
+                <TextBlock Text="Stock" Classes="rotulo" IsVisible="{Binding ProductTrackStock}" />
+                <TextBox Text="{Binding ProductStock}" FontSize="16" Width="140"
+                         HorizontalAlignment="Left" IsVisible="{Binding ProductTrackStock}" />
+
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,20,0,0">
+                  <Button Content="Guardar" FontWeight="Bold" Background="#2E7D32" Foreground="White"
+                          Height="44" Width="130" Command="{Binding SaveProductCommand}" />
+                  <Button Content="Apagar" Height="44" Width="110"
+                          Command="{Binding DeleteProductCommand}" />
+                </StackPanel>
+              </StackPanel>
+            </ScrollViewer>
+          </Border>
+        </Grid>
+      </TabItem>
+    </TabControl>
+
+    <Border Grid.Row="1" Padding="12,8" Background="{DynamicResource SystemChromeLowColor}">
+      <TextBlock Text="{Binding StatusMessage}" FontSize="14" />
+    </Border>
+  </Grid>
+</UserControl>

@@ -1,0 +1,82 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SellingPoint.App.ViewModels"
+             x:Class="SellingPoint.App.Views.DefinicoesView"
+             x:DataType="vm:DefinicoesViewModel">
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock.rotulo">
+      <Setter Property="Opacity" Value="0.7" />
+      <Setter Property="Margin" Value="0,12,0,3" />
+    </Style>
+    <Style Selector="TextBlock.seccao">
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="Margin" Value="0,20,0,4" />
+    </Style>
+    <Style Selector="ComboBox">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="FontSize" Value="15" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="*,Auto">
+    <ScrollViewer Grid.Row="0" Padding="20">
+      <StackPanel MaxWidth="620" HorizontalAlignment="Left">
+
+        <TextBlock Text="IMPRESSORA" Classes="seccao" Margin="0,0,0,4" />
+
+        <TextBlock Text="Ligação" Classes="rotulo" />
+        <ComboBox ItemsSource="{Binding Transports}" SelectedItem="{Binding Transport}" />
+
+        <TextBlock Text="Destino" Classes="rotulo" />
+        <TextBox Text="{Binding Target}" FontSize="15" />
+        <TextBlock Text="{Binding TargetHint}" FontSize="12" Opacity="0.6" TextWrapping="Wrap" Margin="0,4,0,0" />
+
+        <TextBlock Text="Largura do papel" Classes="rotulo" />
+        <ComboBox ItemsSource="{Binding PaperWidths}" SelectedItem="{Binding PaperWidth}" />
+
+        <TextBlock Text="Tabela de caracteres" Classes="rotulo" />
+        <ComboBox ItemsSource="{Binding CodePages}" SelectedItem="{Binding CodePage}" />
+        <CheckBox IsChecked="{Binding FoldAccents}" Margin="0,6,0,0"
+                  Content="Retirar acentos antes de imprimir" />
+        <TextBlock FontSize="12" Opacity="0.6" TextWrapping="Wrap"
+                   Text="Só é preciso se a impressora não souber acentos. Faça o teste de impressão e veja a linha dos acentos." />
+
+        <TextBlock Text="TALÃO" Classes="seccao" />
+
+        <TextBlock Text="Cabeçalho" Classes="rotulo" />
+        <TextBox Text="{Binding Header}" PlaceholderText="FESTA DA ALDEIA 2026" FontSize="15" />
+
+        <TextBlock Text="Rodapé" Classes="rotulo" />
+        <TextBox Text="{Binding Footer}" PlaceholderText="Obrigado!" FontSize="15" />
+
+        <CheckBox IsChecked="{Binding ShowPriceOnSenha}" Margin="0,14,0,0"
+                  Content="Mostrar o preço nas senhas" />
+        <CheckBox IsChecked="{Binding PrintSummarySlip}"
+                  Content="Imprimir também um talão com a compra toda" />
+        <CheckBox IsChecked="{Binding OpenCashDrawer}"
+                  Content="Abrir a gaveta do dinheiro a cada venda" />
+
+        <TextBlock Text="VENDA" Classes="seccao" />
+
+        <TextBlock Text="Quando um produto fica sem stock" Classes="rotulo" />
+        <ComboBox ItemsSource="{Binding StockBehaviours}" SelectedItem="{Binding StockBehaviour}" />
+
+        <TextBlock Text="DADOS" Classes="seccao" />
+        <TextBlock Text="{Binding DatabasePath}" FontSize="12" Opacity="0.7" TextWrapping="Wrap" />
+
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,24,0,24">
+          <Button Content="Guardar" Height="46" Width="140" FontWeight="Bold"
+                  Background="#2E7D32" Foreground="White" Command="{Binding SaveCommand}" />
+          <Button Content="Teste de impressão" Height="46" Command="{Binding TestPrintCommand}" />
+          <Button Content="Cópia de segurança" Height="46" Command="{Binding BackupCommand}" />
+        </StackPanel>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Border Grid.Row="1" Padding="12,8" Background="{DynamicResource SystemChromeLowColor}">
+      <TextBlock Text="{Binding StatusMessage}" FontSize="14" TextWrapping="Wrap" />
+    </Border>
+  </Grid>
+</UserControl>

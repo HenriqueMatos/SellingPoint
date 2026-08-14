@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SellingPoint.Core/SellingPoint.Core.csproj" />
+    <Project Path="src/SellingPoint.Data/SellingPoint.Data.csproj" />
+    <Project Path="src/SellingPoint.Printing/SellingPoint.Printing.csproj" />
+    <Project Path="src/SellingPoint.App/SellingPoint.App.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SellingPoint.Tests/SellingPoint.Tests.csproj" />
+  </Folder>
+</Solution>

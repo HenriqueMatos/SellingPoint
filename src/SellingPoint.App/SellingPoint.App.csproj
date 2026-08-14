@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>SellingPoint</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Skia and HarfBuzz ship 100 MB of debug symbols alongside their native
+         libraries; without this they land next to the executable. -->
+    <AllowedReferenceRelatedFileExtensions>none</AllowedReferenceRelatedFileExtensions>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.1" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.1" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.1" />
+    <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3">
+      <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SellingPoint.Core\SellingPoint.Core.csproj" />
+    <ProjectReference Include="..\SellingPoint.Data\SellingPoint.Data.csproj" />
+    <ProjectReference Include="..\SellingPoint.Printing\SellingPoint.Printing.csproj" />
+  </ItemGroup>
+
+  <!-- Skia and HarfBuzz ship their native debug symbols as ordinary publish
+       assets. Our own symbols are embedded, so nothing here is a loss and the
+       deliverable stays one file. -->
+  <Target Name="TrimPublishSymbols" AfterTargets="ComputeFilesToPublish">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" Condition="'%(Extension)' == '.pdb'" />
+    </ItemGroup>
+  </Target>
+</Project>

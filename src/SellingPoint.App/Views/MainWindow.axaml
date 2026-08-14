@@ -1,0 +1,26 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SellingPoint.App.ViewModels"
+        xmlns:views="using:SellingPoint.App.Views"
+        x:Class="SellingPoint.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="SellingPoint"
+        MinWidth="1100" MinHeight="700"
+        WindowState="Maximized">
+
+  <TabControl SelectedIndex="{Binding SelectedTab}">
+    <TabItem Header="Venda" FontSize="16">
+      <views:VendaView DataContext="{Binding Venda}" />
+    </TabItem>
+    <TabItem Header="Gestão" FontSize="16">
+      <views:GestaoView DataContext="{Binding Gestao}" />
+    </TabItem>
+    <TabItem Header="Relatórios" FontSize="16">
+      <views:RelatoriosView DataContext="{Binding Relatorios}" />
+    </TabItem>
+    <TabItem Header="Definições" FontSize="16">
+      <views:DefinicoesView DataContext="{Binding Definicoes}" />
+    </TabItem>
+  </TabControl>
+</Window>

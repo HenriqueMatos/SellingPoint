@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- Money and dates are formatted by hand (see Money.Format), so ICU is dead
+         weight in the single-file Windows build. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- Symbols inside the assembly, so `publish` leaves one file to copy. -->
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+</Project>
