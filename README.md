@@ -38,7 +38,7 @@ No .NET install, no admin rights, nothing else to copy. Data lives in
 
 ```sh
 dotnet run --project src/SellingPoint.App        # run
-dotnet test                                      # 161 tests
+dotnet test                                      # 168 tests
 ```
 
 Build the Windows executable — this works from macOS and Linux too, no Windows
@@ -80,12 +80,21 @@ Settings → **Ligação**:
 | Porta série | `COM3` | USB printers that install as a virtual COM port |
 | Impressora do Windows | the printer's exact name | USB printers that only appear as a print queue |
 
+Pick the connection and the list below it fills with what the machine actually
+has — the printers Windows knows about, or the COM ports — and tapping one fills
+in the destination. The exact name never has to be typed.
+
 Then press **Teste de impressão**. Check the accent line: if `áéíóú ãõ çÇ` comes
 out as line-drawing characters, change the code page.
 
-On a serial connection, **Procurar** scans every COM port and fills in the one
-that answers, so the port never has to be looked up in the Gestor de
-Dispositivos.
+On a serial connection, **Procurar** goes further and asks each port which one
+answers like a printer, so the port never has to be looked up in the Gestor de
+Dispositivos. Note that COM1 and COM2 are usually the motherboard's own legacy
+ports; a USB printer that presents as a COM port lands on COM3 or higher, so
+finding only those two means the printer is a Windows print queue instead.
+
+The Windows print-queue path is one-way, so on it the app can print but cannot
+read status — no *sem papel* or *tampa aberta*. Serial and network can do both.
 
 ## When the printer stops mid-event
 

@@ -42,11 +42,15 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
         new("Impedir a venda", OutOfStockBehaviour.Block)
     ];
 
-    public ObservableCollection<string> AvailablePorts { get; } = [];
+    /// <summary>What the machine actually has: Windows printers, or COM ports.</summary>
+    public ObservableCollection<string> AvailableTargets { get; } = [];
 
     [ObservableProperty] public partial Choice<string>? Transport { get; set; }
     [ObservableProperty] public partial string Target { get; set; } = "";
     [ObservableProperty] public partial bool IsSerial { get; set; }
+    [ObservableProperty] public partial string? SelectedTarget { get; set; }
+    [ObservableProperty] public partial bool ShowTargetList { get; set; }
+    [ObservableProperty] public partial string TargetListHint { get; set; } = "";
     [ObservableProperty] public partial string TargetHint { get; set; } = "";
     [ObservableProperty] public partial Choice<int>? PaperWidth { get; set; }
     [ObservableProperty] public partial Choice<int>? CodePage { get; set; }
@@ -80,6 +84,7 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
         OpenCashDrawer = settings.GetBool(SettingKeys.OpenCashDrawer, false);
 
         DatabasePath = services.Db.Path;
+        RefreshTargets();
         StatusMessage = $"Impressora atual: {services.Printer.Transport.Describe()}";
     }
 
@@ -87,13 +92,54 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
     {
         IsSerial = value?.Value == "serial";
         TargetHint = Hint(value?.Value);
+        RefreshTargets();
+    }
+
+    /// <summary>Tapping a name in the list is the same as typing it, without the typos.</summary>
+    partial void OnSelectedTargetChanged(string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value)) Target = value;
+    }
+
+    /// <summary>
+    /// Fills the list the moment a connection is chosen, rather than waiting for a
+    /// button. Both are instant: naming what exists is cheap, and only working out
+    /// which COM port answers like a printer is slow enough to need Procurar.
+    /// </summary>
+    private void RefreshTargets()
+    {
+        var transport = Transport?.Value;
+
+        AvailableTargets.Clear();
+        foreach (var target in transport switch
+                 {
+                     "windows" => WindowsPrinters.List(),
+                     "serial" => PrinterLocator.AvailablePorts(),
+                     _ => []
+                 })
+        {
+            AvailableTargets.Add(target);
+        }
+
+        ShowTargetList = transport is "windows" or "serial";
+        SelectedTarget = AvailableTargets.FirstOrDefault(t => t == Target);
+
+        TargetListHint = (transport, AvailableTargets.Count) switch
+        {
+            ("windows", 0) => "O Windows não tem nenhuma impressora instalada.",
+            ("windows", _) => "Toque na impressora que quer usar.",
+            ("serial", 0) => "Não há portas série nesta máquina.",
+            ("serial", _) => "Toque numa porta, ou use «Procurar» para descobrir qual responde.",
+            _ => ""
+        };
     }
 
     private string Hint(string? transport) => transport switch
     {
         "network" => "Endereço IP, por exemplo 192.168.1.50 ou 192.168.1.50:9100",
         "serial" => "Nome da porta, por exemplo COM3",
-        "windows" => "Nome exato da impressora como aparece no Windows",
+        "windows" => "Escolha da lista abaixo. Nesta ligação não é possível consultar o estado "
+                     + "(sem papel, tampa aberta) — só imprimir.",
         _ => $"Pasta onde gravar os talões. Vazio usa {services.DefaultTicketFolder}"
     };
 
@@ -145,8 +191,8 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
         StatusMessage = "A procurar portas...";
         var probes = await Task.Run(() => PrinterLocator.ScanAll(services.SerialBaudRate));
 
-        AvailablePorts.Clear();
-        foreach (var probe in probes) AvailablePorts.Add(probe.PortName);
+        AvailableTargets.Clear();
+        foreach (var probe in probes) AvailableTargets.Add(probe.PortName);
 
         var printer = probes.FirstOrDefault(p => p.AnsweredAsPrinter);
         if (printer is not null)
@@ -157,8 +203,9 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
         }
 
         StatusMessage = probes.Count == 0
-            ? "Não há portas série nesta máquina."
-            : $"Portas encontradas: {string.Join(", ", probes.Select(p => p.PortName))}. Nenhuma respondeu como impressora.";
+            ? "Não há portas série nesta máquina. Se a impressora está ligada por USB, veja em "
+              + "Definições do Windows → Impressoras e scanners e use a ligação «Impressora do Windows»."
+            : PrinterDiagnosticsViewModel.NoPrinterAdvice(probes);
     }
 
     [RelayCommand]
