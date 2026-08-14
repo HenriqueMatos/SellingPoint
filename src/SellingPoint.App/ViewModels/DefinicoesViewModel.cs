@@ -59,6 +59,17 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
     [ObservableProperty] public partial string Header { get; set; } = "";
     [ObservableProperty] public partial string Footer { get; set; } = "";
     [ObservableProperty] public partial bool ShowPriceOnSenha { get; set; } = true;
+
+    // --- paper -------------------------------------------------------------
+    [ObservableProperty] public partial bool ShowRules { get; set; } = true;
+    [ObservableProperty] public partial bool ShowDate { get; set; } = true;
+    [ObservableProperty] public partial bool ShowTotalOnGroupSlip { get; set; } = true;
+    [ObservableProperty] public partial bool ShowPricesOnGroupSlip { get; set; } = true;
+    [ObservableProperty] public partial string LineSpacing { get; set; } = "30";
+    [ObservableProperty] public partial string FeedLines { get; set; } = "4";
+
+    [ObservableProperty] public partial string PaperCostText { get; set; } = "";
+    [ObservableProperty] public partial bool FeedTooShort { get; set; }
     [ObservableProperty] public partial bool PrintSummarySlip { get; set; }
     [ObservableProperty] public partial bool FoldAccents { get; set; }
     [ObservableProperty] public partial bool OpenCashDrawer { get; set; }
@@ -79,12 +90,19 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
         Header = settings.GetString(SettingKeys.TicketHeader, "");
         Footer = settings.GetString(SettingKeys.TicketFooter, "Obrigado!");
         ShowPriceOnSenha = settings.GetBool(SettingKeys.ShowPriceOnSenha, true);
+        ShowRules = settings.GetBool(SettingKeys.ShowRules, true);
+        ShowDate = settings.GetBool(SettingKeys.ShowDate, true);
+        ShowTotalOnGroupSlip = settings.GetBool(SettingKeys.ShowTotalOnGroupSlip, true);
+        ShowPricesOnGroupSlip = settings.GetBool(SettingKeys.ShowPricesOnGroupSlip, true);
+        LineSpacing = settings.GetInt(SettingKeys.LineSpacingDots, 0) is var dots && dots > 0 ? dots.ToString() : "30";
+        FeedLines = settings.GetInt(SettingKeys.FeedLinesBeforeCut, 4).ToString();
         PrintSummarySlip = settings.GetBool(SettingKeys.PrintSummarySlip, false);
         FoldAccents = settings.GetBool(SettingKeys.FoldAccents, false);
         OpenCashDrawer = settings.GetBool(SettingKeys.OpenCashDrawer, false);
 
         DatabasePath = services.Db.Path;
         RefreshTargets();
+        RefreshPaperCost();
         StatusMessage = $"Impressora atual: {services.Printer.Transport.Describe()}";
     }
 
@@ -93,6 +111,47 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
         IsSerial = value?.Value == "serial";
         TargetHint = Hint(value?.Value);
         RefreshTargets();
+    }
+
+    partial void OnShowRulesChanged(bool value) => RefreshPaperCost();
+    partial void OnShowDateChanged(bool value) => RefreshPaperCost();
+    partial void OnShowTotalOnGroupSlipChanged(bool value) => RefreshPaperCost();
+    partial void OnShowPricesOnGroupSlipChanged(bool value) => RefreshPaperCost();
+    partial void OnShowPriceOnSenhaChanged(bool value) => RefreshPaperCost();
+    partial void OnLineSpacingChanged(string value) => RefreshPaperCost();
+    partial void OnFeedLinesChanged(string value) => RefreshPaperCost();
+    partial void OnPaperWidthChanged(Choice<int>? value) => RefreshPaperCost();
+    partial void OnHeaderChanged(string value) => RefreshPaperCost();
+    partial void OnFooterChanged(string value) => RefreshPaperCost();
+
+    private int ParsedSpacing => int.TryParse(LineSpacing, out var v) && v is > 0 and <= 255 ? v : 0;
+    private int ParsedFeed => int.TryParse(FeedLines, out var v) && v is >= 0 and <= 20 ? v : 4;
+
+    /// <summary>
+    /// Measures a real slip rather than estimating from a formula, so the number
+    /// on screen cannot drift away from what actually prints.
+    /// </summary>
+    private void RefreshPaperCost()
+    {
+        var options = new TicketOptions
+        {
+            Columns = PaperWidth?.Value ?? 48,
+            Header = Header,
+            Footer = Footer,
+            ShowPriceOnSenha = ShowPriceOnSenha,
+            ShowRules = ShowRules,
+            ShowDate = ShowDate,
+            ShowTotalOnGroupSlip = ShowTotalOnGroupSlip,
+            ShowPricesOnGroupSlip = ShowPricesOnGroupSlip,
+            LineSpacingDots = ParsedSpacing,
+            FeedLinesBeforeCut = ParsedFeed
+        };
+
+        var group = PaperEstimate.ForGroupSlip(options);
+        var senha = PaperEstimate.ForSenha(options);
+
+        PaperCostText = $"Talão de 2 artigos: {group}.  Senha: {senha}.";
+        FeedTooShort = ParsedFeed < 3;
     }
 
     /// <summary>Tapping a name in the list is the same as typing it, without the typos.</summary>
@@ -157,6 +216,12 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
         settings.Set(SettingKeys.TicketHeader, Header.Trim());
         settings.Set(SettingKeys.TicketFooter, Footer.Trim());
         settings.Set(SettingKeys.ShowPriceOnSenha, ShowPriceOnSenha);
+        settings.Set(SettingKeys.ShowRules, ShowRules);
+        settings.Set(SettingKeys.ShowDate, ShowDate);
+        settings.Set(SettingKeys.ShowTotalOnGroupSlip, ShowTotalOnGroupSlip);
+        settings.Set(SettingKeys.ShowPricesOnGroupSlip, ShowPricesOnGroupSlip);
+        settings.Set(SettingKeys.LineSpacingDots, ParsedSpacing);
+        settings.Set(SettingKeys.FeedLinesBeforeCut, ParsedFeed);
         settings.Set(SettingKeys.PrintSummarySlip, PrintSummarySlip);
         settings.Set(SettingKeys.FoldAccents, FoldAccents);
         settings.Set(SettingKeys.OpenCashDrawer, OpenCashDrawer);

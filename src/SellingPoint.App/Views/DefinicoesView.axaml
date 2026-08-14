@@ -73,12 +73,51 @@
         <TextBlock Text="Rodapé" Classes="label" />
         <TextBox Text="{Binding Footer}" PlaceholderText="Obrigado!" FontSize="15" />
 
+        <TextBlock Text="Vazio esconde a linha. Cada linha destas sai em todos os talões da noite."
+                   Classes="hint" Margin="0,6,0,0" />
+
         <CheckBox IsChecked="{Binding ShowPriceOnSenha}" Margin="0,14,0,0"
                   Content="Mostrar o preço nas senhas" />
         <CheckBox IsChecked="{Binding PrintSummarySlip}"
                   Content="Imprimir também um talão com a compra toda" />
         <CheckBox IsChecked="{Binding OpenCashDrawer}"
                   Content="Abrir a gaveta do dinheiro a cada venda" />
+
+        <TextBlock Text="Poupar papel" Classes="section" />
+
+        <CheckBox IsChecked="{Binding ShowRules}" Content="Réguas separadoras" />
+        <CheckBox IsChecked="{Binding ShowDate}" Content="Linha da data" />
+        <CheckBox IsChecked="{Binding ShowTotalOnGroupSlip}" Content="Total no talão do grupo" />
+        <CheckBox IsChecked="{Binding ShowPricesOnGroupSlip}" Content="Preços no talão do grupo" />
+        <TextBlock Classes="hint"
+                   Text="O talão do resumo para o cliente mantém sempre os preços e o total — é o que tem de bater certo." />
+
+        <Grid ColumnDefinitions="*,*" Margin="0,14,0,0">
+          <StackPanel Grid.Column="0" Margin="0,0,8,0">
+            <TextBlock Text="Espaçamento entre linhas" Classes="label" Margin="0,0,0,4" />
+            <TextBox Text="{Binding LineSpacing}" />
+            <TextBlock Classes="hint" Text="Pontos. 30 é o normal; 24 encolhe tudo um quinto." />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Margin="8,0,0,0">
+            <TextBlock Text="Avanço antes do corte" Classes="label" Margin="0,0,0,4" />
+            <TextBox Text="{Binding FeedLines}" />
+            <TextBlock Classes="hint" Text="Linhas. É o maior gasto fixo por talão." />
+          </StackPanel>
+        </Grid>
+
+        <Border Background="#33D97706" CornerRadius="8" Padding="12" Margin="0,10,0,0"
+                IsVisible="{Binding FeedTooShort}">
+          <TextBlock TextWrapping="Wrap"
+                     Text="Com menos de 3 linhas de avanço, a lâmina pode cortar por cima da última linha do talão. Depende da impressora — faça um teste antes do evento." />
+        </Border>
+
+        <Border Background="{DynamicResource Surface2}" CornerRadius="8" Padding="12" Margin="0,12,0,0">
+          <StackPanel>
+            <TextBlock Text="Com estas definições" Classes="hint" Margin="0,0,0,4" />
+            <TextBlock Text="{Binding PaperCostText}" TextWrapping="Wrap"
+                       FontSize="{DynamicResource TextBody}" />
+          </StackPanel>
+        </Border>
 
         <TextBlock Text="Venda" Classes="section" />
 

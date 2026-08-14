@@ -6,6 +6,9 @@ namespace SellingPoint.Printing;
 /// Lays a slip out as lines. One layout implementation feeds both the on-screen
 /// preview and the printer bytes, so what is previewed on a Mac with no printer
 /// attached is what comes out of the printer.
+///
+/// Most of what is optional here is optional for one reason: paper. A slip of two
+/// items can spend ten of its fourteen lines on decoration.
 /// </summary>
 public static class SlipRenderer
 {
@@ -23,22 +26,40 @@ public static class SlipRenderer
 
         AddHeader(lines, options);
 
+        // With no line of its own for the date, the time rides along with the
+        // reference, which is where the eye already is.
+        var reference = options.ShowDate
+            ? slip.Reference
+            : $"{slip.Reference} {slip.CreatedAt:HH:mm}";
+
         lines.Add(new SlipTextLine(
-            Layout.LeftRight(slip.IsSummary ? "" : slip.PrintGroup.ToUpperInvariant(), slip.Reference, columns),
+            Layout.LeftRight(slip.IsSummary ? "" : slip.PrintGroup.ToUpperInvariant(), reference, columns),
             Style: SlipStyle.Bold));
-        lines.Add(new SlipTextLine(slip.CreatedAt.ToString("dd/MM/yyyy HH:mm")));
-        lines.Add(new SlipTextLine(Layout.Rule('-', columns)));
+
+        if (options.ShowDate)
+            lines.Add(new SlipTextLine(slip.CreatedAt.ToString("dd/MM/yyyy HH:mm")));
+
+        AddRule(lines, '-', options);
 
         foreach (var item in slip.Items)
         {
+            var label = $"{item.Qty}x {item.Name}";
+
+            // The summary slip is the customer's, so it keeps its prices whatever
+            // the group slips are set to - it is the one that has to add up.
             lines.Add(new SlipTextLine(
-                Layout.LeftRight($"{item.Qty}x {item.Name}", Money.Format(item.TotalCents), columns)));
+                options.ShowPricesOnGroupSlip || slip.IsSummary
+                    ? Layout.LeftRight(label, Money.Format(item.TotalCents), columns)
+                    : Layout.Truncate(label, columns)));
         }
 
-        lines.Add(new SlipTextLine(Layout.Rule('-', columns)));
-        lines.Add(new SlipTextLine(
-            Layout.LeftRight("TOTAL", Money.Format(slip.TotalCents), columns),
-            Style: SlipStyle.Bold));
+        if (options.ShowTotalOnGroupSlip || slip.IsSummary)
+        {
+            AddRule(lines, '-', options);
+            lines.Add(new SlipTextLine(
+                Layout.LeftRight("TOTAL", Money.Format(slip.TotalCents), columns),
+                Style: SlipStyle.Bold));
+        }
 
         AddFooter(lines, options);
         return lines;
@@ -49,7 +70,10 @@ public static class SlipRenderer
         var lines = new List<SlipTextLine>();
 
         AddHeader(lines, options);
-        lines.Add(new SlipTextLine(""));
+
+        // The blank lines around the name are breathing room, and breathing room
+        // is paper. They go with the rules.
+        if (options.ShowRules) lines.Add(new SlipTextLine(""));
 
         // Double width halves the usable columns. A name that no longer fits keeps
         // the double height and drops the double width rather than wrapping.
@@ -62,29 +86,49 @@ public static class SlipRenderer
         if (options.ShowPriceOnSenha)
             lines.Add(new SlipTextLine(Money.Format(slip.PriceCents), SlipAlign.Center, SlipStyle.DoubleHeight));
 
-        lines.Add(new SlipTextLine(""));
-        lines.Add(new SlipTextLine(
-            $"{slip.Reference}   {slip.CreatedAt:dd/MM HH:mm}", SlipAlign.Center));
+        if (options.ShowRules) lines.Add(new SlipTextLine(""));
 
-        if (!string.IsNullOrWhiteSpace(slip.PrintGroup))
-            lines.Add(new SlipTextLine(slip.PrintGroup.ToUpperInvariant(), SlipAlign.Center));
+        var stamp = options.ShowDate
+            ? $"{slip.Reference}   {slip.CreatedAt:dd/MM HH:mm}"
+            : slip.Reference;
 
-        lines.Add(new SlipTextLine(Layout.Rule('=', options.Columns)));
+        // Without a line of its own, the group name joins the reference rather
+        // than disappearing - the bar still needs to know the slip is theirs.
+        if (!string.IsNullOrWhiteSpace(slip.PrintGroup) && !options.ShowRules)
+            stamp = $"{stamp}  {slip.PrintGroup.ToUpperInvariant()}";
+
+        lines.Add(new SlipTextLine(stamp, SlipAlign.Center));
+
+        if (options.ShowRules)
+        {
+            if (!string.IsNullOrWhiteSpace(slip.PrintGroup))
+                lines.Add(new SlipTextLine(slip.PrintGroup.ToUpperInvariant(), SlipAlign.Center));
+
+            lines.Add(new SlipTextLine(Layout.Rule('=', options.Columns)));
+        }
+
         return lines;
     }
 
     private static void AddHeader(List<SlipTextLine> lines, TicketOptions options)
     {
+        // An empty header is how the header is turned off - one piece of state
+        // rather than a switch and a text box that can disagree.
         if (!string.IsNullOrWhiteSpace(options.Header))
             lines.Add(new SlipTextLine(options.Header, SlipAlign.Center, SlipStyle.Bold));
 
-        lines.Add(new SlipTextLine(Layout.Rule('=', options.Columns)));
+        AddRule(lines, '=', options);
     }
 
     private static void AddFooter(List<SlipTextLine> lines, TicketOptions options)
     {
         if (!string.IsNullOrWhiteSpace(options.Footer))
             lines.Add(new SlipTextLine(options.Footer, SlipAlign.Center));
+    }
+
+    private static void AddRule(List<SlipTextLine> lines, char character, TicketOptions options)
+    {
+        if (options.ShowRules) lines.Add(new SlipTextLine(Layout.Rule(character, options.Columns)));
     }
 }
 

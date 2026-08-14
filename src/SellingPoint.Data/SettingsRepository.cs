@@ -48,6 +48,12 @@ public static class SettingKeys
     public const string TicketHeader = "ticket_header";
     public const string TicketFooter = "ticket_footer";
     public const string ShowPriceOnSenha = "show_price_on_senha";
+    public const string ShowRules = "show_rules";
+    public const string ShowDate = "show_date";
+    public const string ShowTotalOnGroupSlip = "show_total_group";
+    public const string ShowPricesOnGroupSlip = "show_prices_group";
+    public const string LineSpacingDots = "line_spacing_dots";
+    public const string FeedLinesBeforeCut = "feed_lines_before_cut";
     public const string FoldAccents = "fold_accents";
     public const string OpenCashDrawer = "open_cash_drawer";
     public const string PrintSummarySlip = "print_summary_slip";

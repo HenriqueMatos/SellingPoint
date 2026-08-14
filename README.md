@@ -38,7 +38,7 @@ No .NET install, no admin rights, nothing else to copy. Data lives in
 
 ```sh
 dotnet run --project src/SellingPoint.App        # run
-dotnet test                                      # 168 tests
+dotnet test                                      # 182 tests
 ```
 
 Build the Windows executable — this works from macOS and Linux too, no Windows
@@ -95,6 +95,30 @@ finding only those two means the printer is a Windows print queue instead.
 
 The Windows print-queue path is one-way, so on it the app can print but cannot
 read status — no *sem papel* or *tampa aberta*. Serial and network can do both.
+
+## Saving paper
+
+A ticket for two items spends most of itself on decoration: a header, four
+rules, a date line, a total, a footer, and the feed before the cut. Ten of its
+fourteen lines are not the order.
+
+Settings → **Poupar papel** turns each of those off independently — rules, date
+line, total, prices on the group slip — and exposes the two numbers that matter:
+line spacing (`ESC 3`, 30 by default, 24 takes a fifth off every line) and the
+feed before the cut.
+
+Underneath, a live line measures what the current combination costs, by
+rendering a real slip and counting it rather than by a formula, so the number
+cannot drift from what actually prints.
+
+Turning everything off takes a two-item slip from **14 lines (52 mm) to 6 lines
+(18 mm)**. Over 200 orders in a night that is 10.4 m of paper down to 3.6 m.
+
+**The feed before the cut is the one to be careful with.** It is the largest
+fixed cost per ticket, but the blade sits above the print head: too few lines
+and the cut goes through the last line of text. How few is safe depends on the
+printer, so the app warns below three and leaves the number to you. Test it
+before the event, not during.
 
 ## When the printer stops mid-event
 

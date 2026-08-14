@@ -36,6 +36,12 @@ public static class EscPosEncoder
         if (CodePageSlots.TryGetValue(options.CodePage, out var slot))
             Write(stream, Esc, (byte)'t', slot);
 
+        // ESC 3 n sets the line height in dots. The printer default is 30; going
+        // to 24 takes a fifth off every line on every ticket without removing a
+        // single thing from what is printed.
+        if (options.LineSpacingDots is > 0 and <= 255)
+            Write(stream, Esc, (byte)'3', (byte)options.LineSpacingDots);
+
         foreach (var line in lines)
         {
             Write(stream, Esc, (byte)'a', Alignment(line.Align));
@@ -53,11 +59,14 @@ public static class EscPosEncoder
             stream.WriteByte(Lf);
         }
 
-        // Back to plain text, feed the slip clear of the cutter, then cut.
+        // Back to plain text, feed the slip clear of the cutter, then cut. The
+        // feed is the single largest fixed cost per ticket, and the one that
+        // cannot simply be minimised: the blade sits above the print head, so too
+        // few lines cuts through the last line of text.
         Write(stream, Esc, (byte)'a', 0);
         Write(stream, Esc, (byte)'E', 0);
         Write(stream, Gs, (byte)'!', 0);
-        Write(stream, Esc, (byte)'d', 4);
+        Write(stream, Esc, (byte)'d', (byte)Math.Clamp(options.FeedLinesBeforeCut, 0, 255));
         Write(stream, Gs, (byte)'V', 66, 0);
 
         if (openCashDrawer)

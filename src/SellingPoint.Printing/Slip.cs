@@ -61,6 +61,36 @@ public sealed record TicketOptions
     /// <summary>Some organizers deliberately hide the price on the slip the bar collects.</summary>
     public bool ShowPriceOnSenha { get; init; } = true;
 
+    // --- paper -------------------------------------------------------------
+    // A slip of two items spends most of itself on decoration: rules, a date
+    // line, a total, and the feed before the cut. Each of these is a line of
+    // paper on every ticket of every order, all night.
+
+    /// <summary>The = and - separator lines.</summary>
+    public bool ShowRules { get; init; } = true;
+
+    /// <summary>A line of its own for the date. Off, the time joins the reference line.</summary>
+    public bool ShowDate { get; init; } = true;
+
+    /// <summary>The group's subtotal. The bar handles no money, so it may not need it.</summary>
+    public bool ShowTotalOnGroupSlip { get; init; } = true;
+
+    /// <summary>Prices against each line of the group slip.</summary>
+    public bool ShowPricesOnGroupSlip { get; init; } = true;
+
+    /// <summary>
+    /// ESC 3 n, in dots. The printer default is 30; 24 takes a fifth off every
+    /// line without removing anything. Zero leaves the printer's own setting.
+    /// </summary>
+    public int LineSpacingDots { get; init; }
+
+    /// <summary>
+    /// Lines fed before the cut. The blade sits above the print head, so this is
+    /// not free to shrink: too few and the cut goes through the last line. Which
+    /// number is safe depends on the printer.
+    /// </summary>
+    public int FeedLinesBeforeCut { get; init; } = 4;
+
     /// <summary>An extra slip listing the whole order, for the customer to keep.</summary>
     public bool PrintSummarySlip { get; init; }
 
