@@ -54,18 +54,23 @@ public class EndToEndTests
             Assert.Equal(1, first.TicketNumber);
             Assert.Equal(250, first.ChangeCents);
 
-            // Bar list (Bolo) + two beer senhas + Cozinha list (Bifana).
+            // One ticket per category: two beer senhas + a Sobremesas list + a
+            // Comida list. The customer hands each slip to the counter that serves it.
             Assert.Equal(4, printer.Print(first));
 
             var slips = Directory.GetFiles(folder, "*.txt").Select(File.ReadAllText).ToList();
             Assert.Equal(4, slips.Count);
             Assert.Equal(2, slips.Count(s => s.Contains("CERVEJA") && s.Contains("#0001-")));
-            Assert.Single(slips, s => s.Contains("BAR") && s.Contains("1x Bolo"));
-            Assert.Single(slips, s => s.Contains("COZINHA") && s.Contains("1x Bifana"));
+            Assert.Single(slips, s => s.Contains("SOBREMESAS") && s.Contains("1x Bolo"));
+            Assert.Single(slips, s => s.Contains("COMIDA") && s.Contains("1x Bifana"));
 
-            // Nothing from the kitchen leaks onto the bar's slip, or the wrong
-            // people get handed the wrong food all night.
-            Assert.DoesNotContain(slips.Single(s => s.Contains("BAR") && s.Contains("Bolo")), "Bifana");
+            // Every slip carries the same ticket number, so three pieces of paper
+            // are still recognisably one order.
+            Assert.All(slips, s => Assert.Contains("#0001", s));
+
+            // Nothing crosses over: the dessert stand must not be handed a bifana.
+            Assert.DoesNotContain(slips.Single(s => s.Contains("1x Bolo")), "Bifana");
+            Assert.DoesNotContain(slips.Single(s => s.Contains("1x Bifana")), "Bolo");
 
             // --- second sale: card ---------------------------------------------
             var cart2 = new Cart();
@@ -109,6 +114,47 @@ public class EndToEndTests
             Assert.True(File.Exists(backup));
             Assert.Equal(1150, new ReportRepository(new Db(backup))
                 .Build(new SalesRepository(new Db(backup)).GetSessions().Single()).TotalCents);
+        }
+        finally
+        {
+            if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Two_categories_sharing_a_print_group_come_out_on_one_slip()
+    {
+        // Separation is the default; combining is what the organizer opts into by
+        // giving two categories the same group name in Gestão. This is that path.
+        using var t = new TempDb();
+        var folder = Path.Combine(Path.GetTempPath(), $"sellingpoint-shared-{Guid.NewGuid():N}");
+
+        try
+        {
+            var sobremesas = t.Catalog.GetCategories().Single(c => c.Name == "Sobremesas");
+            sobremesas.PrintGroup = "Bebidas";          // desserts now print with the drinks
+            t.Catalog.UpdateCategory(sobremesas);
+
+            var session = t.Sales.OpenSession("Festa", 0, Evening);
+            var products = t.Catalog.GetProducts();
+            var cart = new Cart();
+            cart.Add(products.First(p => p.Name == "Cerveja"));
+            cart.Add(products.First(p => p.Name == "Bolo"));
+            cart.Add(products.First(p => p.Name == "Bifana"));
+
+            var sale = t.Sales.Save(
+                SaleFactory.Build(cart, t.Catalog.GetCategories().ToDictionary(c => c.Id),
+                    PaymentMethod.Cash, 1000, Evening), session.Id);
+
+            var printer = new TicketPrinter(new FileTransport(folder), new TicketOptions { Columns = 48 });
+
+            // Two slips now, not three: drinks and desserts share one.
+            Assert.Equal(2, printer.Print(sale));
+
+            var slips = Directory.GetFiles(folder, "*.txt").Select(File.ReadAllText).ToList();
+            var shared = Assert.Single(slips, s => s.Contains("1x Cerveja"));
+            Assert.Contains("1x Bolo", shared);
+            Assert.Single(slips, s => s.Contains("COMIDA") && s.Contains("1x Bifana"));
         }
         finally
         {

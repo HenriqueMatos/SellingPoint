@@ -13,10 +13,11 @@ public class CatalogRepositoryTests
         Assert.Equal(["Bebidas", "Comida", "Sobremesas"], categories.Select(c => c.Name));
         Assert.Equal(14, products.Count);
 
-        // The requirement's own example: drinks and desserts print together, food apart.
-        Assert.Equal("Bar", categories.Single(c => c.Name == "Bebidas").PrintGroup);
-        Assert.Equal("Bar", categories.Single(c => c.Name == "Sobremesas").PrintGroup);
-        Assert.Equal("Cozinha", categories.Single(c => c.Name == "Comida").PrintGroup);
+        // Each category on its own print group, so a mixed order prints one ticket
+        // per category and nothing arrives at the wrong counter.
+        Assert.Equal("Bebidas", categories.Single(c => c.Name == "Bebidas").PrintGroup);
+        Assert.Equal("Sobremesas", categories.Single(c => c.Name == "Sobremesas").PrintGroup);
+        Assert.Equal("Comida", categories.Single(c => c.Name == "Comida").PrintGroup);
     }
 
     [Fact]
@@ -114,7 +115,7 @@ public class CatalogRepositoryTests
     public void Print_groups_are_offered_as_the_distinct_values_already_in_use()
     {
         using var t = new TempDb();
-        Assert.Equal(["Bar", "Cozinha"], t.Catalog.GetPrintGroups());
+        Assert.Equal(["Bebidas", "Comida", "Sobremesas"], t.Catalog.GetPrintGroups());
     }
 
     [Fact]

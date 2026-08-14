@@ -71,24 +71,29 @@ public sealed class Db(string path)
     }
 
     /// <summary>
-    /// A worked example rather than an empty screen: drinks and desserts both print
-    /// to the bar, food prints to the kitchen. All of it is editable in Gestao.
+    /// A worked example rather than an empty screen. Each category gets its own
+    /// print group, so an order produces one ticket per category: the customer
+    /// hands the drinks slip to the bar and the food slip to the kitchen, and
+    /// nothing arrives at the wrong counter.
+    ///
+    /// Combining is the thing you opt into: give two categories the same group
+    /// name in Gestao and they share a slip.
     /// </summary>
     private static void Seed(SqliteConnection connection)
     {
         var catalog = new (string Name, string Color, string PrintGroup, SlipMode Mode, (string Name, int Cents)[] Products)[]
         {
-            ("Bebidas", "#2563EB", "Bar", SlipMode.Grouped,
+            ("Bebidas", "#2563EB", "Bebidas", SlipMode.Grouped,
             [
                 ("Cerveja", 150), ("Refrigerante", 120), ("Sumo", 100),
                 ("Água", 80), ("Vinho", 150), ("Café", 70)
             ]),
-            ("Comida", "#EA580C", "Cozinha", SlipMode.Grouped,
+            ("Comida", "#EA580C", "Comida", SlipMode.Grouped,
             [
                 ("Bifana", 300), ("Cachorro", 250), ("Hambúrguer", 350),
                 ("Sandes de Leitão", 400), ("Batatas Fritas", 200)
             ]),
-            ("Sobremesas", "#DB2777", "Bar", SlipMode.Grouped,
+            ("Sobremesas", "#DB2777", "Sobremesas", SlipMode.Grouped,
             [
                 ("Bolo", 150), ("Farturas", 200), ("Gelado", 150)
             ])
