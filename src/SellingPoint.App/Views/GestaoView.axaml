@@ -36,8 +36,8 @@
               </ListBox>
               <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,10,0,0">
                 <Button Content="Nova" Command="{Binding NewCategoryCommand}" />
-                <Button Content="↑" Width="44" Command="{Binding MoveCategoryUpCommand}" />
-                <Button Content="↓" Width="44" Command="{Binding MoveCategoryDownCommand}" />
+                <Button Content="↑" Width="56" Command="{Binding MoveCategoryUpCommand}" />
+                <Button Content="↓" Width="56" Command="{Binding MoveCategoryDownCommand}" />
               </StackPanel>
             </Grid>
           </Border>
@@ -61,7 +61,7 @@
                 <TextBox Text="{Binding CategoryPrintGroup}" Margin="0,6,0,0" FontSize="16"
                          PlaceholderText="ou escreva um grupo novo" />
                 <TextBlock TextWrapping="Wrap" FontSize="12" Opacity="0.6" Margin="0,6,0,0"
-                           Text="Categorias com o mesmo grupo saem no mesmo talão. Grupos diferentes saem em talões separados — por exemplo Bebidas e Sobremesas em &quot;Bar&quot;, Comida em &quot;Cozinha&quot;." />
+                           Text="Cada categoria sai no seu próprio talão. Para juntar duas categorias no mesmo talão, dê-lhes o mesmo grupo." />
 
                 <CheckBox IsChecked="{Binding CategoryPerUnit}" Margin="0,14,0,0"
                           Content="Uma senha por unidade" />
@@ -81,10 +81,48 @@
 
       <!-- Products -->
       <TabItem Header="Produtos">
-        <Grid ColumnDefinitions="360,*">
+        <Grid ColumnDefinitions="420,*">
           <Border Grid.Column="0" Classes="panel forma">
-            <Grid RowDefinitions="*,Auto">
-              <ListBox Grid.Row="0" ItemsSource="{Binding ProductRows}"
+            <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+              <!-- Which category's products are on screen -->
+              <ListBox Grid.Row="0" ItemsSource="{Binding ProductFilters}"
+                       SelectedItem="{Binding SelectedProductFilter}" Margin="0,0,0,10">
+                <ListBox.ItemsPanel>
+                  <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.Styles>
+                  <Style Selector="ListBoxItem">
+                    <Setter Property="Padding" Value="0" />
+                    <Setter Property="Margin" Value="0,0,8,8" />
+                    <Setter Property="Opacity" Value="0.6" />
+                  </Style>
+                  <Style Selector="ListBoxItem:selected">
+                    <Setter Property="Opacity" Value="1" />
+                  </Style>
+                  <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                    <Setter Property="Background" Value="Transparent" />
+                  </Style>
+                </ListBox.Styles>
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ProductFilterViewModel">
+                    <Border Background="{Binding Background}" CornerRadius="8" Padding="14,9">
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="{Binding Name}" Foreground="White" LineHeight="24"
+                                   FontWeight="SemiBold" />
+                        <Border Background="#59000000" CornerRadius="999" Padding="7,1"
+                                VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Count}" Foreground="White" FontSize="11" />
+                        </Border>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+
+              <TextBlock Grid.Row="1" Text="{Binding ProductCountText}" Classes="section" />
+
+              <ListBox Grid.Row="2" ItemsSource="{Binding ProductRows}"
                        SelectedItem="{Binding SelectedProduct}" Background="Transparent">
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="vm:ProductRowViewModel">
@@ -99,10 +137,10 @@
                   </DataTemplate>
                 </ListBox.ItemTemplate>
               </ListBox>
-              <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,10,0,0">
+              <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="6" Margin="0,10,0,0">
                 <Button Content="Novo" Command="{Binding NewProductCommand}" />
-                <Button Content="↑" Width="44" Command="{Binding MoveProductUpCommand}" />
-                <Button Content="↓" Width="44" Command="{Binding MoveProductDownCommand}" />
+                <Button Content="↑" Width="56" Command="{Binding MoveProductUpCommand}" />
+                <Button Content="↓" Width="56" Command="{Binding MoveProductDownCommand}" />
               </StackPanel>
             </Grid>
           </Border>

@@ -1,9 +1,27 @@
 using System.Collections.ObjectModel;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SellingPoint.Core;
 
 namespace SellingPoint.App.ViewModels;
+
+/// <summary>
+/// One chip above the product list. A null <see cref="Category"/> is the "Todas"
+/// chip, which is why the type carries the category rather than just its id.
+/// </summary>
+public sealed class ProductFilterViewModel(Category? category, int count)
+{
+    public Category? Category { get; } = category;
+    public string Name => Category?.Name ?? "Todas";
+    public int Count { get; } = count;
+
+    public IBrush Background => Category is null
+        ? new SolidColorBrush(Color.Parse("#3A4560"))
+        : CategoryPalette.Gradient(Category.Color, 0.72);
+
+    public bool Matches(Product product) => Category is null || product.CategoryId == Category.Id;
+}
 
 public sealed class CategoryRowViewModel(Category category)
 {
@@ -46,8 +64,15 @@ public partial class GestaoViewModel(AppServices services) : ViewModelBase
     public ObservableCollection<ProductRowViewModel> ProductRows { get; } = [];
     public ObservableCollection<string> PrintGroups { get; } = [];
     public ObservableCollection<CategoryRowViewModel> CategoryChoices { get; } = [];
+    public ObservableCollection<ProductFilterViewModel> ProductFilters { get; } = [];
 
     [ObservableProperty] public partial string StatusMessage { get; set; } = "";
+
+    /// <summary>Which category's products are on screen. Null only before the first load.</summary>
+    [ObservableProperty] public partial ProductFilterViewModel? SelectedProductFilter { get; set; }
+
+    /// <summary>"6 produtos" - with the list filtered, the total stops being obvious.</summary>
+    [ObservableProperty] public partial string ProductCountText { get; set; } = "";
 
     // --- category form -------------------------------------------------------
     [ObservableProperty] public partial CategoryRowViewModel? SelectedCategory { get; set; }
@@ -81,19 +106,53 @@ public partial class GestaoViewModel(AppServices services) : ViewModelBase
             CategoryChoices.Add(new CategoryRowViewModel(category));
         }
 
-        var byId = _categories.ToDictionary(c => c.Id);
-        ProductRows.Clear();
-        foreach (var product in _products)
-            ProductRows.Add(new ProductRowViewModel(product, byId.GetValueOrDefault(product.CategoryId)));
-
         PrintGroups.Clear();
         foreach (var group in services.Catalog.GetPrintGroups()) PrintGroups.Add(group);
+
+        // Rebuilt on every load so the counts stay honest and a deleted category
+        // cannot leave a chip behind pointing at nothing.
+        var previousFilterId = SelectedProductFilter?.Category?.Id;
+        ProductFilters.Clear();
+        ProductFilters.Add(new ProductFilterViewModel(null, _products.Count));
+        foreach (var category in _categories)
+            ProductFilters.Add(new ProductFilterViewModel(category, _products.Count(p => p.CategoryId == category.Id)));
+
+        SelectedProductFilter = ProductFilters.FirstOrDefault(f => f.Category?.Id == previousFilterId)
+                                ?? ProductFilters[0];
+
+        RefreshProductRows(selectedProductId);
 
         // Falling back to the first row means the form arrives filled in rather
         // than blank, which reads as "nothing here" on a screen full of nothing.
         SelectedCategory = CategoryRows.FirstOrDefault(r => r.Category.Id == selectedCategoryId)
                            ?? CategoryRows.FirstOrDefault();
-        SelectedProduct = ProductRows.FirstOrDefault(r => r.Product.Id == selectedProductId)
+    }
+
+    partial void OnSelectedProductFilterChanged(ProductFilterViewModel? value) => RefreshProductRows();
+
+    /// <summary>
+    /// Rebuilds the product list for the active filter, keeping the selected
+    /// product if it is still on screen.
+    /// </summary>
+    private void RefreshProductRows(int? keepProductId = null)
+    {
+        keepProductId ??= SelectedProduct?.Product.Id;
+
+        var filter = SelectedProductFilter;
+        var byId = _categories.ToDictionary(c => c.Id);
+
+        ProductRows.Clear();
+        foreach (var product in _products.Where(p => filter is null || filter.Matches(p)))
+            ProductRows.Add(new ProductRowViewModel(product, byId.GetValueOrDefault(product.CategoryId)));
+
+        ProductCountText = ProductRows.Count switch
+        {
+            0 => "sem produtos",
+            1 => "1 produto",
+            var n => $"{n} produtos"
+        };
+
+        SelectedProduct = ProductRows.FirstOrDefault(r => r.Product.Id == keepProductId)
                           ?? ProductRows.FirstOrDefault();
     }
 
@@ -196,7 +255,13 @@ public partial class GestaoViewModel(AppServices services) : ViewModelBase
     [RelayCommand]
     private void NewProduct()
     {
-        var category = ProductCategory ?? CategoryChoices.FirstOrDefault();
+        // The filtered category wins: standing in Bebidas and pressing Novo should
+        // start a drink, not whatever happened to be selected before.
+        var filtered = SelectedProductFilter?.Category;
+        var category = (filtered is null ? null : CategoryChoices.FirstOrDefault(c => c.Category.Id == filtered.Id))
+                       ?? ProductCategory
+                       ?? CategoryChoices.FirstOrDefault();
+
         SelectedProduct = null;
         ProductName = "";
         ProductPrice = "";
@@ -204,7 +269,10 @@ public partial class GestaoViewModel(AppServices services) : ViewModelBase
         ProductActive = true;
         ProductTrackStock = false;
         ProductStock = "0";
-        StatusMessage = "Novo produto — preencha e guarde.";
+
+        StatusMessage = category is null
+            ? "Crie primeiro uma categoria."
+            : $"Novo produto em {category.Name} — preencha e guarde.";
     }
 
     [RelayCommand]
@@ -241,8 +309,18 @@ public partial class GestaoViewModel(AppServices services) : ViewModelBase
 
         var id = product.Id;
         Load();
+
+        // Moving a product to another category would otherwise drop it out of the
+        // filtered list the instant it was saved, which reads as losing the thing
+        // you just typed. Follow it instead.
+        if (ProductRows.All(r => r.Product.Id != id))
+        {
+            SelectedProductFilter = ProductFilters.FirstOrDefault(f => f.Category?.Id == product.CategoryId)
+                                    ?? ProductFilters[0];
+        }
+
         SelectedProduct = ProductRows.FirstOrDefault(r => r.Product.Id == id);
-        StatusMessage = $"'{product.Name}' guardado a {Money.Format(priceCents)}.";
+        StatusMessage = $"'{product.Name}' guardado em {category.Name} a {Money.Format(priceCents)}.";
     }
 
     [RelayCommand]

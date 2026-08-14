@@ -10,13 +10,19 @@ Windows program, single file, no installer. Runs offline on one laptop.
 
 - **Sell** — tap categories and products, take cash with change calculation or
   record a card payment, print.
-- **Print by group** — every category has a *print group*. Categories sharing a
-  group print together on one slip; different groups get their own slip. Drinks
-  and desserts on `Bar`, food on `Cozinha` gives exactly two slips per order.
+- **Print by group** — every category has a *print group*. By default each
+  category has its own, so one order prints one ticket per category: the customer
+  hands the drinks slip to the bar, the food slip to the kitchen and the dessert
+  slip to the dessert stand, and nothing arrives at the wrong counter. Every slip
+  carries the same ticket number, so they stay recognisably one order.
+  Combining is the opt-in: give two categories the same group name in Gestão and
+  they share a slip.
 - **Senhas or lists** — per category: `3x Cerveja` as one line, or three separate
   slips for the bar to collect, one per drink.
 - **Change everything** — categories, colours, products, prices, order, stock.
-  All in the app, no config files.
+  All in the app, no config files. Products are listed one category at a time,
+  so you open Bebidas, see the six drinks you have, and add another without
+  wading through everything else.
 - **Stock** — count down as things sell, warn or block at zero, log restocks.
 - **Close the night** — takings split cash vs card, per product, per category,
   expected cash against what was counted, stock left. CSV export, printed
@@ -32,7 +38,7 @@ No .NET install, no admin rights, nothing else to copy. Data lives in
 
 ```sh
 dotnet run --project src/SellingPoint.App        # run
-dotnet test                                      # 148 tests
+dotnet test                                      # 161 tests
 ```
 
 Build the Windows executable — this works from macOS and Linux too, no Windows
