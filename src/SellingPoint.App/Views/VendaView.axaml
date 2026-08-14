@@ -9,11 +9,12 @@
     <!-- A product is the most-tapped thing in the app. Big, high contrast, and
          the price large enough to read while counting change. -->
     <Style Selector="Button.produto">
-      <Setter Property="Width" Value="176" />
-      <Setter Property="Height" Value="112" />
+      <Setter Property="Width" Value="208" />
+      <Setter Property="Height" Value="136" />
       <Setter Property="Margin" Value="0,0,12,12" />
-      <Setter Property="Padding" Value="14,12" />
+      <Setter Property="Padding" Value="0" />
       <Setter Property="Foreground" Value="White" />
+      <Setter Property="Background" Value="Transparent" />
       <Setter Property="CornerRadius" Value="{DynamicResource RadiusMedium}" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -21,8 +22,8 @@
     </Style>
 
     <Style Selector="Button.tecla">
-      <Setter Property="Width" Value="92" />
-      <Setter Property="Height" Value="68" />
+      <Setter Property="Width" Value="104" />
+      <Setter Property="Height" Value="76" />
       <Setter Property="Margin" Value="5" />
       <Setter Property="FontSize" Value="24" />
       <Setter Property="FontWeight" Value="SemiBold" />
@@ -51,12 +52,12 @@
           <StackPanel Grid.Column="0" VerticalAlignment="Center">
             <TextBlock Text="Sessão" Classes="section" Margin="0,0,0,2" />
             <TextBlock Text="{Binding SessionText}" FontSize="{DynamicResource TextLarge}"
-                       FontWeight="SemiBold" />
+                       LineHeight="32" FontWeight="SemiBold" />
           </StackPanel>
 
           <!-- The printer light. Tapping it opens the diagnostics without leaving
                the till screen, which is where you are when it stops working. -->
-          <Button Grid.Column="2" Classes="pill quiet" Margin="0,0,10,0" MinHeight="48"
+          <Button Grid.Column="2" Classes="pill quiet" Margin="0,0,10,0"
                   Command="{Binding OpenDiagnosticsCommand}">
             <StackPanel Orientation="Horizontal" Spacing="10">
               <Ellipse Width="12" Height="12" Fill="{Binding PrinterChipBrush}"
@@ -66,11 +67,11 @@
             </StackPanel>
           </Button>
 
-          <Button Grid.Column="3" Content="Abrir sessão" Classes="primary" MinHeight="48"
+          <Button Grid.Column="3" Content="Abrir sessão" Classes="primary"
                   Margin="0,0,10,0" IsVisible="{Binding !HasOpenSession}"
                   Command="{Binding OpenSessionPanelCommand}" />
 
-          <ToggleButton Grid.Column="4" Content="Ver talão" MinHeight="48" Padding="16,10"
+          <ToggleButton Grid.Column="4" Content="Ver talão" Padding="16,10"
                         CornerRadius="6" IsChecked="{Binding IsPreviewVisible}"
                         Command="{Binding TogglePreviewCommand}" />
         </Grid>
@@ -105,7 +106,7 @@
               <DataTemplate x:DataType="vm:CategoryTabViewModel">
                 <Border Background="{Binding Background}" CornerRadius="10" Padding="22,13"
                         BorderBrush="{Binding RingBrush}" BorderThickness="2">
-                  <TextBlock Text="{Binding Name}" Foreground="White"
+                  <TextBlock Text="{Binding Name}" Foreground="White" LineHeight="32"
                              FontSize="{DynamicResource TextLarge}" FontWeight="SemiBold" />
                 </Border>
               </DataTemplate>
@@ -120,9 +121,10 @@
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:ProductButtonViewModel">
                   <Button Classes="produto" Command="{Binding PressCommand}"
-                          Background="{Binding Background}" Opacity="{Binding Opacity}">
+                          Opacity="{Binding Opacity}">
+                    <Border Background="{Binding Background}" CornerRadius="12" Padding="14,12">
                     <Grid RowDefinitions="*,Auto">
-                      <TextBlock Grid.Row="0" Text="{Binding Name}" FontSize="17"
+                      <TextBlock Grid.Row="0" Text="{Binding Name}" FontSize="17" LineHeight="30"
                                  FontWeight="SemiBold" TextWrapping="Wrap" Foreground="White" />
                       <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
                         <TextBlock Grid.Column="0" Text="{Binding PriceText}" FontSize="22"
@@ -135,6 +137,7 @@
                         </Border>
                       </Grid>
                     </Grid>
+                    </Border>
                   </Button>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
@@ -168,7 +171,7 @@
                             <TextBlock Text="{Binding QtyText}" FontWeight="Bold"
                                        FontSize="{DynamicResource TextBody}" />
                           </Border>
-                          <TextBlock Text="{Binding Name}" TextWrapping="Wrap"
+                          <TextBlock Text="{Binding Name}" TextWrapping="Wrap" LineHeight="26"
                                      FontSize="{DynamicResource TextBody}"
                                      VerticalAlignment="Center" />
                         </StackPanel>
@@ -182,7 +185,7 @@
 
                         <!-- 44px targets, 8px apart -->
                         <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal"
-                                    Spacing="8" HorizontalAlignment="Right" Margin="0,8,0,0">
+                                    Spacing="10" HorizontalAlignment="Right" Margin="0,10,0,0">
                           <Button Classes="stepper" Content="−" Command="{Binding DecrementCommand}" />
                           <Button Classes="stepper" Content="+" Command="{Binding IncrementCommand}" />
                           <Button Classes="stepper danger" Content="✕" Command="{Binding RemoveCommand}" />
@@ -195,14 +198,16 @@
             </ScrollViewer>
 
             <!-- The total is the number everyone in the queue is looking at -->
-            <Border Grid.Row="2" Background="{DynamicResource Surface3}" CornerRadius="12"
-                    Padding="16,12" Margin="0,14,0,12">
+            <Border Grid.Row="2" Background="{DynamicResource MoneyGlow}" CornerRadius="12"
+                    Padding="18,14" Margin="0,14,0,12"
+                    BorderBrush="{DynamicResource MoneyDeep}" BorderThickness="1">
               <Grid ColumnDefinitions="Auto,*">
                 <TextBlock Grid.Column="0" Text="TOTAL" FontSize="{DynamicResource TextLarge}"
                            FontWeight="Bold" VerticalAlignment="Center"
                            Foreground="{DynamicResource InkMuted}" />
                 <TextBlock Grid.Column="1" Text="{Binding TotalText}"
                            FontSize="{DynamicResource TextHuge}" FontWeight="Bold"
+                           Foreground="{DynamicResource Money}"
                            HorizontalAlignment="Right" />
               </Grid>
             </Border>
@@ -287,13 +292,13 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:QuickTenderViewModel">
                 <Button Content="{Binding Label}" Command="{Binding PressCommand}"
-                        Height="52" MinWidth="104" Margin="0,0,8,8"
+                        MinWidth="104" Margin="0,0,8,8"
                         FontSize="{DynamicResource TextLarge}" />
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
 
-          <WrapPanel MaxWidth="314" HorizontalAlignment="Center">
+          <WrapPanel MaxWidth="354" HorizontalAlignment="Center">
             <Button Classes="tecla" Content="1" Command="{Binding CashDigitCommand}" CommandParameter="1" />
             <Button Classes="tecla" Content="2" Command="{Binding CashDigitCommand}" CommandParameter="2" />
             <Button Classes="tecla" Content="3" Command="{Binding CashDigitCommand}" CommandParameter="3" />
@@ -326,7 +331,7 @@
       <Border Classes="overlay-card" MinWidth="680" MaxHeight="820">
         <Grid RowDefinitions="*,Auto">
           <views:PrinterDiagnosticsView Grid.Row="0" DataContext="{Binding Diagnostics}" />
-          <Button Grid.Row="1" Content="Fechar" Height="52" HorizontalAlignment="Stretch"
+          <Button Grid.Row="1" Content="Fechar" HorizontalAlignment="Stretch"
                   Margin="0,18,0,0" Command="{Binding CloseDiagnosticsCommand}" />
         </Grid>
       </Border>
@@ -342,10 +347,10 @@
           <TextBlock Text="Fundo de caixa (opcional)" Classes="label" />
           <TextBox Text="{Binding SessionFloatEntry}" PlaceholderText="0,00" />
           <Grid ColumnDefinitions="*,*" Margin="0,18,0,0">
-            <Button Grid.Column="0" Content="Cancelar" Classes="quiet" Height="52"
+            <Button Grid.Column="0" Content="Cancelar" Classes="quiet"
                     HorizontalAlignment="Stretch" Margin="0,0,5,0"
                     Command="{Binding CloseSessionPanelCommand}" />
-            <Button Grid.Column="1" Content="Abrir" Classes="primary" Height="52"
+            <Button Grid.Column="1" Content="Abrir" Classes="primary"
                     HorizontalAlignment="Stretch" Margin="5,0,0,0"
                     Command="{Binding ConfirmOpenSessionCommand}" />
           </Grid>

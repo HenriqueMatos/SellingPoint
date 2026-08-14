@@ -29,7 +29,7 @@
         <TextBlock Text="Destino" Classes="label" />
         <Grid ColumnDefinitions="*,Auto">
           <TextBox Grid.Column="0" Text="{Binding Target}" FontSize="15" />
-          <Button Grid.Column="1" Content="Procurar" Margin="8,0,0,0" Height="44"
+          <Button Grid.Column="1" Content="Procurar" Margin="8,0,0,0"
                   IsVisible="{Binding IsSerial}" Command="{Binding ScanPortsCommand}" />
         </Grid>
         <TextBlock Text="{Binding TargetHint}" FontSize="12" Opacity="0.6" TextWrapping="Wrap" Margin="0,4,0,0" />
@@ -80,9 +80,9 @@
         <TextBlock Text="{Binding DatabasePath}" FontSize="12" Opacity="0.7" TextWrapping="Wrap" />
 
         <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,24,0,24">
-          <Button Content="Guardar" Classes="primary" Height="48" Width="150" Command="{Binding SaveCommand}" />
-          <Button Content="Teste de impressão" Height="46" Command="{Binding TestPrintCommand}" />
-          <Button Content="Cópia de segurança" Height="46" Command="{Binding BackupCommand}" />
+          <Button Content="Guardar" Classes="primary" Width="150" Command="{Binding SaveCommand}" />
+          <Button Content="Teste de impressão" Command="{Binding TestPrintCommand}" />
+          <Button Content="Cópia de segurança" Command="{Binding BackupCommand}" />
         </StackPanel>
       </StackPanel>
     </ScrollViewer>

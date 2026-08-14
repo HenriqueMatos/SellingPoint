@@ -22,7 +22,7 @@
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:SessionRowViewModel">
                 <StackPanel Margin="0,4">
-                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="15" />
+                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="15" LineHeight="26" />
                   <TextBlock Text="{Binding Detail}" FontSize="11" Opacity="0.6" />
                 </StackPanel>
               </DataTemplate>
@@ -81,7 +81,7 @@
                 <TextBlock Text="Fechar a sessão — conte o dinheiro na caixa" Opacity="0.7" />
                 <Grid ColumnDefinitions="200,Auto">
                   <TextBox Grid.Column="0" Text="{Binding CountedEntry}" PlaceholderText="0,00" FontSize="16" />
-                  <Button Grid.Column="1" Content="Fechar sessão" Margin="8,0,0,0" Height="44"
+                  <Button Grid.Column="1" Content="Fechar sessão" Margin="8,0,0,0"
                           Classes="primary" Command="{Binding CloseSessionCommand}" />
                 </Grid>
               </StackPanel>
@@ -97,7 +97,7 @@
                   <DataTemplate x:DataType="vm:AmountRowViewModel">
                     <Grid ColumnDefinitions="*,60,90" Margin="0,3">
                       <StackPanel Grid.Column="0">
-                        <TextBlock Text="{Binding Name}" />
+                        <TextBlock Text="{Binding Name}" LineHeight="26" />
                         <TextBlock Text="{Binding Detail}" FontSize="11" Opacity="0.55" />
                       </StackPanel>
                       <TextBlock Grid.Column="1" Text="{Binding UnitsText}" HorizontalAlignment="Right" />
@@ -118,7 +118,7 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:AmountRowViewModel">
                     <Grid ColumnDefinitions="*,60,90" Margin="0,3">
-                      <TextBlock Grid.Column="0" Text="{Binding Name}" />
+                      <TextBlock Grid.Column="0" Text="{Binding Name}" LineHeight="26" />
                       <TextBlock Grid.Column="1" Text="{Binding UnitsText}" HorizontalAlignment="Right" />
                       <TextBlock Grid.Column="2" Text="{Binding TotalText}" HorizontalAlignment="Right"
                                  FontWeight="SemiBold" />
@@ -142,7 +142,7 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:StockRowViewModel">
                     <Grid ColumnDefinitions="*,80,80,80" Margin="0,3">
-                      <TextBlock Grid.Column="0" Text="{Binding Name}" />
+                      <TextBlock Grid.Column="0" Text="{Binding Name}" LineHeight="26" />
                       <TextBlock Grid.Column="1" Text="{Binding SoldText}" HorizontalAlignment="Right" />
                       <TextBlock Grid.Column="2" Text="{Binding AdjustedText}" HorizontalAlignment="Right" />
                       <TextBlock Grid.Column="3" Text="{Binding RemainingText}" HorizontalAlignment="Right"
@@ -155,9 +155,9 @@
           </Border>
 
           <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,20">
-            <Button Content="Exportar CSV" Height="46" Command="{Binding ExportCsvCommand}" />
-            <Button Content="Imprimir resumo" Height="46" Command="{Binding PrintSummaryCommand}" />
-            <Button Content="Cópia de segurança" Height="46" Command="{Binding BackupCommand}" />
+            <Button Content="Exportar CSV" Command="{Binding ExportCsvCommand}" />
+            <Button Content="Imprimir resumo" Command="{Binding PrintSummaryCommand}" />
+            <Button Content="Cópia de segurança" Command="{Binding BackupCommand}" />
           </StackPanel>
         </StackPanel>
       </ScrollViewer>

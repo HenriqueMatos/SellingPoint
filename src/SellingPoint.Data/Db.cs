@@ -78,17 +78,17 @@ public sealed class Db(string path)
     {
         var catalog = new (string Name, string Color, string PrintGroup, SlipMode Mode, (string Name, int Cents)[] Products)[]
         {
-            ("Bebidas", "#2D6CDF", "Bar", SlipMode.Grouped,
+            ("Bebidas", "#2563EB", "Bar", SlipMode.Grouped,
             [
                 ("Cerveja", 150), ("Refrigerante", 120), ("Sumo", 100),
                 ("Água", 80), ("Vinho", 150), ("Café", 70)
             ]),
-            ("Comida", "#D9702B", "Cozinha", SlipMode.Grouped,
+            ("Comida", "#EA580C", "Cozinha", SlipMode.Grouped,
             [
                 ("Bifana", 300), ("Cachorro", 250), ("Hambúrguer", 350),
                 ("Sandes de Leitão", 400), ("Batatas Fritas", 200)
             ]),
-            ("Sobremesas", "#B0439B", "Bar", SlipMode.Grouped,
+            ("Sobremesas", "#DB2777", "Bar", SlipMode.Grouped,
             [
                 ("Bolo", 150), ("Farturas", 200), ("Gelado", 150)
             ])

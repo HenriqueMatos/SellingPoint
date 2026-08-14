@@ -28,7 +28,7 @@
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="vm:CategoryRowViewModel">
                     <StackPanel Margin="0,4">
-                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="15" />
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="15" LineHeight="26" />
                       <TextBlock Text="{Binding Detail}" FontSize="11" Opacity="0.6" />
                     </StackPanel>
                   </DataTemplate>
@@ -69,8 +69,8 @@
                            Text="Ligado: 3 cervejas imprimem 3 senhas. Desligado: sai uma linha &quot;3x Cerveja&quot; no talão do grupo." />
 
                 <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,26,0,0">
-                  <Button Content="Guardar" Classes="primary" Height="48" Width="140" Command="{Binding SaveCategoryCommand}" />
-                  <Button Content="Apagar" Classes="danger-quiet" Height="48" Width="120"
+                  <Button Content="Guardar" Classes="primary" Width="140" Command="{Binding SaveCategoryCommand}" />
+                  <Button Content="Apagar" Classes="danger-quiet" Width="120"
                           Command="{Binding DeleteCategoryCommand}" />
                 </StackPanel>
               </StackPanel>
@@ -90,7 +90,7 @@
                   <DataTemplate x:DataType="vm:ProductRowViewModel">
                     <Grid ColumnDefinitions="*,Auto" Margin="0,4" Opacity="{Binding Opacity}">
                       <StackPanel Grid.Column="0">
-                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="15" />
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="15" LineHeight="26" />
                         <TextBlock Text="{Binding Detail}" FontSize="11" Opacity="0.6" />
                       </StackPanel>
                       <TextBlock Grid.Column="1" Text="{Binding PriceText}" FontSize="15"
@@ -135,8 +135,8 @@
                          HorizontalAlignment="Left" IsVisible="{Binding ProductTrackStock}" />
 
                 <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,26,0,0">
-                  <Button Content="Guardar" Classes="primary" Height="48" Width="140" Command="{Binding SaveProductCommand}" />
-                  <Button Content="Apagar" Classes="danger-quiet" Height="48" Width="120"
+                  <Button Content="Guardar" Classes="primary" Width="140" Command="{Binding SaveProductCommand}" />
+                  <Button Content="Apagar" Classes="danger-quiet" Width="120"
                           Command="{Binding DeleteProductCommand}" />
                 </StackPanel>
               </StackPanel>

@@ -32,7 +32,7 @@ No .NET install, no admin rights, nothing else to copy. Data lives in
 
 ```sh
 dotnet run --project src/SellingPoint.App        # run
-dotnet test                                      # 119 tests
+dotnet test                                      # 148 tests
 ```
 
 Build the Windows executable — this works from macOS and Linux too, no Windows
@@ -143,11 +143,20 @@ tests/SellingPoint.Tests/    every rule above, headless
 The interface is built for one situation: a volunteer working a touch screen, at
 night, outdoors, with a queue in front of them.
 
-- **Surfaces are a slate scale, not black.** Black next to a bright product
-  button is harsh under marquee lighting and leaves no way to show depth. Each
-  step up the scale reads as "closer to the front".
-- **Everything tappable is at least 44px, spaced at least 8px.** A thumb that
-  hits "remove" instead of "minus" costs a real argument at the counter.
+- **Surfaces are a warm near-black, not a cold one.** Colour on top then reads as
+  lit rather than printed on slate, and each step up the scale reads as "closer
+  to the front".
+- **Every product button is a gradient built from its category's colour.** The
+  organizer picks one hex in Gestão and everything else is derived, so there is
+  never a second colour to keep in step with the first. Flat fills read as paper;
+  a top-lit gradient reads as a button.
+- **Money is amber, everywhere.** The total, the change, the confirm button. The
+  number the whole queue is looking at is never the same colour as anything else
+  on the screen.
+- **Everything tappable is at least 56px, spaced at least 8px.** 56 rather than
+  the 44px web baseline because a till is worked standing, at speed, without
+  looking down. Product buttons are 208x136. A thumb that hits "remove" instead
+  of "minus" costs a real argument at the counter.
 - **Every button has a pressed state.** On a touch screen there is no hover, so
   without one a tap that did nothing and a tap that worked look identical.
 - **Colour carries meaning consistently.** Cash is green, card is blue, a printer
@@ -158,8 +167,25 @@ night, outdoors, with a queue in front of them.
   or the touch-target size is one edit, not a search across views.
 
 All foreground/background pairs clear WCAG AA (4.5:1); muted text on a panel is
-7:1. Section headings are 13px rather than 11px because uppercase Portuguese
-loses its diacritics at 11px — "SESSOES" instead of "SESSÕES".
+7:1.
+
+### The accent problem
+
+Avalonia's default line box clips the accent above cap height, so `Água` renders
+as `Agua` and `SESSÃO` as `SESSAO`. Lowercase `é`/`ã` survive because their
+accents fit inside the ascender, and `Ç` survives because its cedilla hangs below
+the baseline — which is what makes the bug easy to miss.
+
+It is not the font and not the font size: a probe showed 17px and 46px both
+clipping, and `LineSpacing` at any value not helping. Only an explicit
+`LineHeight` fixes it, at roughly 1.75x the font size.
+
+So every place that renders a **user-entered name** — product buttons, category
+chips, cart rows, report rows, the admin lists — sets `LineHeight` explicitly.
+Fixed UI labels are written in sentence case instead, which sidesteps it.
+
+This was observed on macOS and could not be verified on Windows. The explicit
+line heights are harmless either way.
 
 Everything except the UI project runs and is tested on macOS and Linux, which is
 what makes developing this on a Mac and shipping it to Windows practical.

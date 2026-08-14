@@ -28,19 +28,19 @@
 
       <!-- The buttons that fix it -->
       <WrapPanel Margin="0,18,0,0">
-        <Button Content="Tentar agora" Classes="primary" Height="48" MinWidth="160" Margin="0,0,8,8" Command="{Binding RetryNowCommand}" />
-        <Button Content="Procurar impressora" Height="46" MinWidth="190" Margin="0,0,8,8"
+        <Button Content="Tentar agora" Classes="primary" MinWidth="160" Margin="0,0,8,8" Command="{Binding RetryNowCommand}" />
+        <Button Content="Procurar impressora" MinWidth="190" Margin="0,0,8,8"
                 Command="{Binding FindPrinterCommand}"
                 IsEnabled="{Binding CanScanPorts}" />
-        <Button Content="Verificar estado" Height="46" MinWidth="160" Margin="0,0,8,8"
+        <Button Content="Verificar estado" MinWidth="160" Margin="0,0,8,8"
                 Command="{Binding CheckNowCommand}" />
-        <Button Content="Teste" Height="46" MinWidth="100" Margin="0,0,8,8"
+        <Button Content="Teste" MinWidth="100" Margin="0,0,8,8"
                 Command="{Binding PrintTestCommand}" />
       </WrapPanel>
 
       <StackPanel Orientation="Horizontal" Spacing="8">
-        <Button Content="Pausar / Retomar" Height="44" Classes="quiet" Command="{Binding TogglePauseCommand}" />
-        <Button Content="Apagar fila" Height="44" Classes="quiet" Command="{Binding DiscardQueueCommand}" />
+        <Button Content="Pausar / Retomar" Classes="quiet" Command="{Binding TogglePauseCommand}" />
+        <Button Content="Apagar fila" Classes="quiet" Command="{Binding DiscardQueueCommand}" />
       </StackPanel>
 
       <Border Background="#33FFAA00" CornerRadius="6" Padding="10" Margin="0,12,0,0"
@@ -55,7 +55,7 @@
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:QueuedJobViewModel">
             <Grid ColumnDefinitions="*,Auto" Margin="0,3">
-              <TextBlock Grid.Column="0" Text="{Binding Title}" FontWeight="SemiBold" />
+              <TextBlock Grid.Column="0" Text="{Binding Title}" FontWeight="SemiBold" LineHeight="26" />
               <TextBlock Grid.Column="1" Text="{Binding Detail}" FontSize="11" Opacity="0.6" />
             </Grid>
           </DataTemplate>

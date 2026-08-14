@@ -37,12 +37,20 @@ public class PrintServiceTests
         public string Describe() => "impressora de teste";
     }
 
+    /// <summary>
+    /// Polls rather than sleeps, so a passing test costs milliseconds. The budget is
+    /// deliberately generous: the print worker runs on a background thread, and a
+    /// machine busy doing something else at the same time should not turn a correct
+    /// implementation into a red build.
+    /// </summary>
     private static async Task WaitUntil(Func<bool> condition, string what)
     {
-        for (var i = 0; i < 100; i++)
+        var deadline = DateTime.UtcNow.AddSeconds(20);
+
+        while (DateTime.UtcNow < deadline)
         {
             if (condition()) return;
-            await Task.Delay(50);
+            await Task.Delay(25);
         }
 
         Assert.Fail($"Timed out waiting for: {what}");
