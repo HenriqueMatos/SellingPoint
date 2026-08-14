@@ -137,11 +137,33 @@ public partial class PrinterDiagnosticsViewModel : ViewModelBase
             : probes.Any(p => p.AnsweredAsPrinter)
                 ? "A impressora continua na porta configurada."
                 : probes.Count == 0
-                    ? "Não há portas série nesta máquina."
-                    : "Nenhuma porta respondeu como impressora. Verifique o cabo e se está ligada.";
+                    ? "Não há portas série nesta máquina. Se a impressora está ligada por USB, "
+                      + "veja em Definições do Windows → Impressoras e scanners: se aparecer lá com um nome, "
+                      + "mude a Ligação para «Impressora do Windows» e escreva esse nome."
+                    : NoPrinterAdvice(probes);
 
         IsScanning = false;
         Refresh();
+    }
+
+    /// <summary>
+    /// COM1 and COM2 are almost always the motherboard's own legacy serial ports.
+    /// A USB printer that presents as a virtual COM port lands on COM3 or higher,
+    /// so finding only the low two means the printer is somewhere else entirely -
+    /// usually installed as a Windows print queue.
+    /// </summary>
+    internal static string NoPrinterAdvice(IReadOnlyList<PortProbe> probes)
+    {
+        var found = string.Join(", ", probes.Select(p => p.PortName));
+        var onlyBuiltIn = probes.All(p => p.PortName is "COM1" or "COM2");
+
+        return onlyBuiltIn
+            ? $"Só foram encontradas {found}, que costumam ser as portas da própria motherboard e não a impressora. "
+              + "Veja em Definições do Windows → Impressoras e scanners: se a impressora aparecer lá com um nome, "
+              + "mude a Ligação para «Impressora do Windows» e escreva esse nome."
+            : $"Portas encontradas: {found}. Nenhuma respondeu como impressora. "
+              + "Verifique o cabo e se está ligada. Se aparecer em Impressoras e scanners, "
+              + "use antes a ligação «Impressora do Windows».";
     }
 
     private void OnPrintServiceChanged() => Dispatcher.UIThread.Post(Refresh);

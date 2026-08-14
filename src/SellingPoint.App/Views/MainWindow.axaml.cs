@@ -16,6 +16,9 @@ public partial class MainWindow : Window
         // not while someone is editing a price in Gestão.
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
 
+        // One handler for every text field in the app, rather than wiring each one.
+        AddHandler(GotFocusEvent, OnGotFocus, RoutingStrategies.Bubble);
+
         UpdateToggleLabel();
     }
 
@@ -25,6 +28,15 @@ public partial class MainWindow : Window
 
         ToggleFullScreen();
         e.Handled = true;
+    }
+
+    /// <summary>
+    /// The machine at the event has no physical keyboard, so tapping a field has
+    /// to bring one up.
+    /// </summary>
+    private void OnGotFocus(object? sender, FocusChangedEventArgs e)
+    {
+        if (e.Source is TextBox) TouchKeyboard.Show();
     }
 
     private void OnToggleFullScreen(object? sender, RoutedEventArgs e) => ToggleFullScreen();

@@ -259,46 +259,58 @@
       </Border>
     </Grid>
 
-    <!-- Cash overlay -->
+    <!--
+      Cash overlay. Two columns rather than one tall stack: stacked, the numpad
+      pushed the confirm button to around 760px from the top, which on a 768px
+      touch screen put it at or past the bottom edge with no way to reach it.
+      Side by side it comes in around 400px and fits any panel we are likely to
+      meet.
+    -->
     <Grid Background="#CC020617" IsVisible="{Binding IsCashPanelOpen}">
-      <Border Classes="overlay-card">
-        <StackPanel Spacing="14">
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Grid.Column="0" Text="A pagar" FontSize="{DynamicResource TextLarge}"
-                       Foreground="{DynamicResource InkMuted}" VerticalAlignment="Center" />
-            <TextBlock Grid.Column="1" Text="{Binding TotalText}"
-                       FontSize="{DynamicResource TextDisplay}" FontWeight="Bold" />
-          </Grid>
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Grid.Column="0" Text="Recebido" FontSize="{DynamicResource TextLarge}"
-                       Foreground="{DynamicResource InkMuted}" VerticalAlignment="Center" />
-            <TextBlock Grid.Column="1" Text="{Binding CashReceivedText}"
-                       FontSize="{DynamicResource TextDisplay}" />
-          </Grid>
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <Border Classes="overlay-card" MinWidth="760" Margin="16">
+        <Grid ColumnDefinitions="*,Auto" RowDefinitions="*,Auto">
 
-          <Border Background="{DynamicResource Cash}" CornerRadius="12" Padding="18,14">
+          <!-- What is owed, what was handed over, what goes back -->
+          <StackPanel Grid.Row="0" Grid.Column="0" Spacing="14" MinWidth="330" Margin="0,0,24,0">
             <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Grid.Column="0" Text="TROCO" FontSize="{DynamicResource TextTitle}"
-                         FontWeight="Bold" Foreground="White" VerticalAlignment="Center" />
-              <TextBlock Grid.Column="1" Text="{Binding ChangeText}"
-                         FontSize="{DynamicResource TextHuge}" FontWeight="Bold" Foreground="White" />
+              <TextBlock Grid.Column="0" Text="A pagar" FontSize="{DynamicResource TextLarge}"
+                         Foreground="{DynamicResource InkMuted}" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding TotalText}"
+                         FontSize="{DynamicResource TextDisplay}" FontWeight="Bold" />
             </Grid>
-          </Border>
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="Recebido" FontSize="{DynamicResource TextLarge}"
+                         Foreground="{DynamicResource InkMuted}" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding CashReceivedText}"
+                         FontSize="{DynamicResource TextDisplay}" />
+            </Grid>
 
-          <ItemsControl ItemsSource="{Binding QuickTenders}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:QuickTenderViewModel">
-                <Button Content="{Binding Label}" Command="{Binding PressCommand}"
-                        MinWidth="104" Margin="0,0,8,8"
-                        FontSize="{DynamicResource TextLarge}" />
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
+            <Border Background="{DynamicResource Cash}" CornerRadius="12" Padding="18,14">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="TROCO" FontSize="{DynamicResource TextTitle}"
+                           FontWeight="Bold" Foreground="White" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding ChangeText}"
+                           FontSize="{DynamicResource TextHuge}" FontWeight="Bold" Foreground="White" />
+              </Grid>
+            </Border>
 
-          <WrapPanel MaxWidth="354" HorizontalAlignment="Center">
+            <ItemsControl ItemsSource="{Binding QuickTenders}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:QuickTenderViewModel">
+                  <Button Content="{Binding Label}" Command="{Binding PressCommand}"
+                          MinWidth="100" Margin="0,0,8,8"
+                          FontSize="{DynamicResource TextLarge}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+
+          <!-- Numpad -->
+          <WrapPanel Grid.Row="0" Grid.Column="1" MaxWidth="354" VerticalAlignment="Top">
             <Button Classes="tecla" Content="1" Command="{Binding CashDigitCommand}" CommandParameter="1" />
             <Button Classes="tecla" Content="2" Command="{Binding CashDigitCommand}" CommandParameter="2" />
             <Button Classes="tecla" Content="3" Command="{Binding CashDigitCommand}" CommandParameter="3" />
@@ -313,33 +325,37 @@
             <Button Classes="tecla quiet" Content="C" Command="{Binding CashClearCommand}" />
           </WrapPanel>
 
-          <Grid ColumnDefinitions="*,*">
-            <Button Grid.Column="0" Content="Cancelar" Classes="quiet" Height="58"
-                    HorizontalAlignment="Stretch" Margin="0,0,5,0"
+          <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" ColumnDefinitions="*,*" Margin="0,20,0,0">
+            <Button Grid.Column="0" Content="Cancelar" Classes="quiet" Height="64"
+                    HorizontalAlignment="Stretch" Margin="0,0,6,0"
                     Command="{Binding CloseCashPanelCommand}" />
-            <Button Grid.Column="1" Content="Confirmar e imprimir" Classes="primary" Height="58"
-                    HorizontalAlignment="Stretch" Margin="5,0,0,0"
-                    FontSize="{DynamicResource TextBody}"
+            <Button Grid.Column="1" Content="Confirmar e imprimir" Classes="primary" Height="64"
+                    HorizontalAlignment="Stretch" Margin="6,0,0,0"
+                    FontSize="{DynamicResource TextLarge}"
                     Command="{Binding ConfirmCashCommand}" IsEnabled="{Binding CanConfirmCash}" />
           </Grid>
-        </StackPanel>
+        </Grid>
       </Border>
+      </ScrollViewer>
     </Grid>
 
     <!-- Printer diagnostics overlay -->
     <Grid Background="#CC020617" IsVisible="{Binding IsDiagnosticsOpen}">
-      <Border Classes="overlay-card" MinWidth="680" MaxHeight="820">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <Border Classes="overlay-card" MinWidth="680" Margin="16">
         <Grid RowDefinitions="*,Auto">
           <views:PrinterDiagnosticsView Grid.Row="0" DataContext="{Binding Diagnostics}" />
           <Button Grid.Row="1" Content="Fechar" HorizontalAlignment="Stretch"
                   Margin="0,18,0,0" Command="{Binding CloseDiagnosticsCommand}" />
         </Grid>
       </Border>
+      </ScrollViewer>
     </Grid>
 
     <!-- Open-session overlay -->
     <Grid Background="#CC020617" IsVisible="{Binding IsSessionPanelOpen}">
-      <Border Classes="overlay-card">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <Border Classes="overlay-card" Margin="16">
         <StackPanel Spacing="8">
           <TextBlock Text="Abrir sessão" FontSize="{DynamicResource TextTitle}" FontWeight="Bold" />
           <TextBlock Text="Nome" Classes="label" />
@@ -356,6 +372,7 @@
           </Grid>
         </StackPanel>
       </Border>
+      </ScrollViewer>
     </Grid>
   </Grid>
 </UserControl>

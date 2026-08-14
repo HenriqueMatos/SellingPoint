@@ -6,7 +6,7 @@
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="SellingPoint"
-        MinWidth="1100" MinHeight="700"
+        MinWidth="1024" MinHeight="600"
         WindowState="FullScreen">
 
   <Grid>
