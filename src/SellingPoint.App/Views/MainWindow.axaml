@@ -7,20 +7,34 @@
         Icon="/Assets/avalonia-logo.ico"
         Title="SellingPoint"
         MinWidth="1100" MinHeight="700"
-        WindowState="Maximized">
+        WindowState="FullScreen">
 
-  <TabControl SelectedIndex="{Binding SelectedTab}">
-    <TabItem Header="Venda" FontSize="16">
-      <views:VendaView DataContext="{Binding Venda}" />
-    </TabItem>
-    <TabItem Header="Gestão" FontSize="16">
-      <views:GestaoView DataContext="{Binding Gestao}" />
-    </TabItem>
-    <TabItem Header="Relatórios" FontSize="16">
-      <views:RelatoriosView DataContext="{Binding Relatorios}" />
-    </TabItem>
-    <TabItem Header="Definições" FontSize="16">
-      <views:DefinicoesView DataContext="{Binding Definicoes}" />
-    </TabItem>
-  </TabControl>
+  <Grid>
+    <TabControl SelectedIndex="{Binding SelectedTab}">
+      <TabItem Header="Venda">
+        <views:VendaView DataContext="{Binding Venda}" />
+      </TabItem>
+      <TabItem Header="Gestão">
+        <views:GestaoView DataContext="{Binding Gestao}" />
+      </TabItem>
+      <TabItem Header="Relatórios">
+        <views:RelatoriosView DataContext="{Binding Relatorios}" />
+      </TabItem>
+      <TabItem Header="Definições">
+        <views:DefinicoesView DataContext="{Binding Definicoes}" />
+      </TabItem>
+    </TabControl>
+
+    <!--
+      In fullscreen, Windows shows nothing at all: no title bar, and no
+      reveal-on-hover the way macOS does. Without a visible button here, someone
+      at the event has no way out they could guess. Sits over the tab strip,
+      right-aligned, so it is on screen in every tab.
+    -->
+    <Button Name="FullScreenToggle" Classes="quiet"
+            HorizontalAlignment="Right" VerticalAlignment="Top"
+            Margin="0,8,16,0" FontSize="13"
+            ToolTip.Tip="F11"
+            Click="OnToggleFullScreen" />
+  </Grid>
 </Window>

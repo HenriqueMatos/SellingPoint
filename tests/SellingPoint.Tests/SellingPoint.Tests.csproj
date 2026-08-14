@@ -14,6 +14,9 @@
     <ProjectReference Include="../../src/SellingPoint.Core/SellingPoint.Core.csproj" />
     <ProjectReference Include="../../src/SellingPoint.Data/SellingPoint.Data.csproj" />
     <ProjectReference Include="../../src/SellingPoint.Printing/SellingPoint.Printing.csproj" />
+    <!-- PrintService is the only thing needed from App; it is deliberately free of
+         any Avalonia reference so it can be tested here. -->
+    <ProjectReference Include="../../src/SellingPoint.App/SellingPoint.App.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -13,6 +13,13 @@ public sealed partial class CategoryTabViewModel(Category category) : ViewModelB
     public Category Category { get; } = category;
     public string Name => Category.Name;
     public IBrush Background => Brush.Parse(Category.Color);
+
+    /// <summary>
+    /// A light ring around the chip. Together with the opacity drop on unselected
+    /// items it makes the current category obvious from arm's length, which a
+    /// standard selection highlight is not on a colour-filled chip.
+    /// </summary>
+    public IBrush RingBrush { get; } = new SolidColorBrush(Colors.White, 0.4);
 }
 
 public sealed partial class ProductButtonViewModel(

@@ -77,4 +77,20 @@ CREATE TABLE IF NOT EXISTS stock_adjustment (
 );
 CREATE INDEX IF NOT EXISTS ix_stock_adjustment_product ON stock_adjustment(product_id);
 
+-- Slips waiting for a printer. The encoded bytes are stored rather than the sale,
+-- so what was queued is exactly what eventually comes out, whatever anyone changes
+-- in Definições in between.
+CREATE TABLE IF NOT EXISTS print_job (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  sale_id     INTEGER,
+  title       TEXT    NOT NULL,
+  payload     BLOB    NOT NULL,
+  preview     TEXT    NOT NULL DEFAULT '',
+  created_at  TEXT    NOT NULL,
+  attempts    INTEGER NOT NULL DEFAULT 0,
+  last_error  TEXT,
+  printed_at  TEXT
+);
+CREATE INDEX IF NOT EXISTS ix_print_job_pending ON print_job(printed_at, id);
+
 INSERT OR IGNORE INTO setting(key, value) VALUES ('schema_version', '1');

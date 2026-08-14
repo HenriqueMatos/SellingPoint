@@ -5,50 +5,63 @@
              x:DataType="vm:DefinicoesViewModel">
 
   <UserControl.Styles>
-    <Style Selector="TextBlock.rotulo">
-      <Setter Property="Opacity" Value="0.7" />
-      <Setter Property="Margin" Value="0,12,0,3" />
-    </Style>
-    <Style Selector="TextBlock.seccao">
-      <Setter Property="FontWeight" Value="Bold" />
-      <Setter Property="FontSize" Value="16" />
-      <Setter Property="Margin" Value="0,20,0,4" />
-    </Style>
     <Style Selector="ComboBox">
       <Setter Property="HorizontalAlignment" Value="Stretch" />
-      <Setter Property="FontSize" Value="15" />
+    </Style>
+    <!-- Section headings here separate whole groups of settings, so they carry
+         more weight than the small labels used inside a panel. -->
+    <Style Selector="TextBlock.section">
+      <Setter Property="FontSize" Value="{DynamicResource TextBody}" />
+      <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+      <Setter Property="Margin" Value="0,26,0,6" />
     </Style>
   </UserControl.Styles>
 
   <Grid RowDefinitions="*,Auto">
-    <ScrollViewer Grid.Row="0" Padding="20">
-      <StackPanel MaxWidth="620" HorizontalAlignment="Left">
+    <ScrollViewer Grid.Row="0" Padding="24,18">
+      <StackPanel MaxWidth="640" HorizontalAlignment="Left">
 
-        <TextBlock Text="IMPRESSORA" Classes="seccao" Margin="0,0,0,4" />
+        <TextBlock Text="Impressora" Classes="section" Margin="0,0,0,4" />
 
-        <TextBlock Text="Ligação" Classes="rotulo" />
+        <TextBlock Text="Ligação" Classes="label" />
         <ComboBox ItemsSource="{Binding Transports}" SelectedItem="{Binding Transport}" />
 
-        <TextBlock Text="Destino" Classes="rotulo" />
-        <TextBox Text="{Binding Target}" FontSize="15" />
+        <TextBlock Text="Destino" Classes="label" />
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBox Grid.Column="0" Text="{Binding Target}" FontSize="15" />
+          <Button Grid.Column="1" Content="Procurar" Margin="8,0,0,0" Height="44"
+                  IsVisible="{Binding IsSerial}" Command="{Binding ScanPortsCommand}" />
+        </Grid>
         <TextBlock Text="{Binding TargetHint}" FontSize="12" Opacity="0.6" TextWrapping="Wrap" Margin="0,4,0,0" />
+        <ItemsControl ItemsSource="{Binding AvailablePorts}" Margin="0,4,0,0" IsVisible="{Binding IsSerial}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Background="#22FFFFFF" CornerRadius="4" Padding="8,3" Margin="0,0,6,0">
+                <TextBlock Text="{Binding}" FontSize="12" />
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
 
-        <TextBlock Text="Largura do papel" Classes="rotulo" />
+        <TextBlock Text="Largura do papel" Classes="label" />
         <ComboBox ItemsSource="{Binding PaperWidths}" SelectedItem="{Binding PaperWidth}" />
 
-        <TextBlock Text="Tabela de caracteres" Classes="rotulo" />
+        <TextBlock Text="Tabela de caracteres" Classes="label" />
         <ComboBox ItemsSource="{Binding CodePages}" SelectedItem="{Binding CodePage}" />
         <CheckBox IsChecked="{Binding FoldAccents}" Margin="0,6,0,0"
                   Content="Retirar acentos antes de imprimir" />
         <TextBlock FontSize="12" Opacity="0.6" TextWrapping="Wrap"
                    Text="Só é preciso se a impressora não souber acentos. Faça o teste de impressão e veja a linha dos acentos." />
 
-        <TextBlock Text="TALÃO" Classes="seccao" />
+        <TextBlock Text="Talão" Classes="section" />
 
-        <TextBlock Text="Cabeçalho" Classes="rotulo" />
+        <TextBlock Text="Cabeçalho" Classes="label" />
         <TextBox Text="{Binding Header}" PlaceholderText="FESTA DA ALDEIA 2026" FontSize="15" />
 
-        <TextBlock Text="Rodapé" Classes="rotulo" />
+        <TextBlock Text="Rodapé" Classes="label" />
         <TextBox Text="{Binding Footer}" PlaceholderText="Obrigado!" FontSize="15" />
 
         <CheckBox IsChecked="{Binding ShowPriceOnSenha}" Margin="0,14,0,0"
@@ -58,24 +71,23 @@
         <CheckBox IsChecked="{Binding OpenCashDrawer}"
                   Content="Abrir a gaveta do dinheiro a cada venda" />
 
-        <TextBlock Text="VENDA" Classes="seccao" />
+        <TextBlock Text="Venda" Classes="section" />
 
-        <TextBlock Text="Quando um produto fica sem stock" Classes="rotulo" />
+        <TextBlock Text="Quando um produto fica sem stock" Classes="label" />
         <ComboBox ItemsSource="{Binding StockBehaviours}" SelectedItem="{Binding StockBehaviour}" />
 
-        <TextBlock Text="DADOS" Classes="seccao" />
+        <TextBlock Text="Dados" Classes="section" />
         <TextBlock Text="{Binding DatabasePath}" FontSize="12" Opacity="0.7" TextWrapping="Wrap" />
 
         <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,24,0,24">
-          <Button Content="Guardar" Height="46" Width="140" FontWeight="Bold"
-                  Background="#2E7D32" Foreground="White" Command="{Binding SaveCommand}" />
+          <Button Content="Guardar" Classes="primary" Height="48" Width="150" Command="{Binding SaveCommand}" />
           <Button Content="Teste de impressão" Height="46" Command="{Binding TestPrintCommand}" />
           <Button Content="Cópia de segurança" Height="46" Command="{Binding BackupCommand}" />
         </StackPanel>
       </StackPanel>
     </ScrollViewer>
 
-    <Border Grid.Row="1" Padding="12,8" Background="{DynamicResource SystemChromeLowColor}">
+    <Border Grid.Row="1" Padding="20,12" Background="{DynamicResource Surface1}" BorderBrush="{DynamicResource LineSoft}" BorderThickness="0,1,0,0">
       <TextBlock Text="{Binding StatusMessage}" FontSize="14" TextWrapping="Wrap" />
     </Border>
   </Grid>

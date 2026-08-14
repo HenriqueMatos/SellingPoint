@@ -149,20 +149,14 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task PrintSummary()
+    private void PrintSummary()
     {
         if (_report is null) return;
 
-        try
-        {
-            var report = _report;
-            await Task.Run(() => services.Printer.PrintText("FECHO DE CAIXA", BuildPrintedSummary(report)));
-            StatusMessage = "Resumo impresso.";
-        }
-        catch (Exception e)
-        {
-            StatusMessage = $"Falha na impressão: {e.Message}";
-        }
+        services.Print.EnqueueText("FECHO DE CAIXA", BuildPrintedSummary(_report));
+        StatusMessage = services.Print.Status.CanPrint
+            ? "Resumo enviado para a impressora."
+            : $"Resumo em espera: {services.Print.Status.Message}. Sai assim que a impressora responder.";
     }
 
     [RelayCommand]

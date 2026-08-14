@@ -5,25 +5,23 @@
              x:DataType="vm:GestaoViewModel">
 
   <UserControl.Styles>
-    <Style Selector="TextBlock.rotulo">
-      <Setter Property="Opacity" Value="0.7" />
-      <Setter Property="Margin" Value="0,8,0,2" />
-    </Style>
     <Style Selector="Border.forma">
-      <Setter Property="Background" Value="{DynamicResource SystemChromeLowColor}" />
-      <Setter Property="CornerRadius" Value="10" />
-      <Setter Property="Padding" Value="16" />
-      <Setter Property="Margin" Value="12" />
+      <Setter Property="Margin" Value="16" />
+    </Style>
+    <!-- Sub-tabs are smaller than the top-level ones so the hierarchy reads -->
+    <Style Selector="TabItem">
+      <Setter Property="FontSize" Value="{DynamicResource TextBody}" />
+      <Setter Property="Padding" Value="16,10" />
     </Style>
   </UserControl.Styles>
 
   <Grid RowDefinitions="*,Auto">
-    <TabControl Grid.Row="0">
+    <TabControl Grid.Row="0" Margin="8,4,8,0">
 
       <!-- Categories -->
       <TabItem Header="Categorias">
         <Grid ColumnDefinitions="360,*">
-          <Border Grid.Column="0" Classes="forma">
+          <Border Grid.Column="0" Classes="panel forma">
             <Grid RowDefinitions="*,Auto">
               <ListBox Grid.Row="0" ItemsSource="{Binding CategoryRows}"
                        SelectedItem="{Binding SelectedCategory}" Background="Transparent">
@@ -44,20 +42,20 @@
             </Grid>
           </Border>
 
-          <Border Grid.Column="1" Classes="forma">
+          <Border Grid.Column="1" Classes="panel forma">
             <ScrollViewer>
               <StackPanel MaxWidth="520" HorizontalAlignment="Left">
-                <TextBlock Text="Nome" Classes="rotulo" />
+                <TextBlock Text="Nome" Classes="label" />
                 <TextBox Text="{Binding CategoryName}" FontSize="16" />
 
-                <TextBlock Text="Cor do botão" Classes="rotulo" />
+                <TextBlock Text="Cor do botão" Classes="label" />
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBox Grid.Column="0" Text="{Binding CategoryColor}" FontSize="16" />
                   <Border Grid.Column="1" Width="48" Margin="8,0,0,0" CornerRadius="6"
                           Background="{Binding CategoryColor}" />
                 </Grid>
 
-                <TextBlock Text="Grupo de impressão" Classes="rotulo" />
+                <TextBlock Text="Grupo de impressão" Classes="label" />
                 <ComboBox ItemsSource="{Binding PrintGroups}" SelectedItem="{Binding CategoryPrintGroup}"
                           HorizontalAlignment="Stretch" FontSize="16" />
                 <TextBox Text="{Binding CategoryPrintGroup}" Margin="0,6,0,0" FontSize="16"
@@ -70,10 +68,9 @@
                 <TextBlock TextWrapping="Wrap" FontSize="12" Opacity="0.6"
                            Text="Ligado: 3 cervejas imprimem 3 senhas. Desligado: sai uma linha &quot;3x Cerveja&quot; no talão do grupo." />
 
-                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,20,0,0">
-                  <Button Content="Guardar" FontWeight="Bold" Background="#2E7D32" Foreground="White"
-                          Height="44" Width="130" Command="{Binding SaveCategoryCommand}" />
-                  <Button Content="Apagar" Height="44" Width="110"
+                <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,26,0,0">
+                  <Button Content="Guardar" Classes="primary" Height="48" Width="140" Command="{Binding SaveCategoryCommand}" />
+                  <Button Content="Apagar" Classes="danger-quiet" Height="48" Width="120"
                           Command="{Binding DeleteCategoryCommand}" />
                 </StackPanel>
               </StackPanel>
@@ -85,7 +82,7 @@
       <!-- Products -->
       <TabItem Header="Produtos">
         <Grid ColumnDefinitions="360,*">
-          <Border Grid.Column="0" Classes="forma">
+          <Border Grid.Column="0" Classes="panel forma">
             <Grid RowDefinitions="*,Auto">
               <ListBox Grid.Row="0" ItemsSource="{Binding ProductRows}"
                        SelectedItem="{Binding SelectedProduct}" Background="Transparent">
@@ -110,16 +107,16 @@
             </Grid>
           </Border>
 
-          <Border Grid.Column="1" Classes="forma">
+          <Border Grid.Column="1" Classes="panel forma">
             <ScrollViewer>
               <StackPanel MaxWidth="520" HorizontalAlignment="Left">
-                <TextBlock Text="Nome" Classes="rotulo" />
+                <TextBlock Text="Nome" Classes="label" />
                 <TextBox Text="{Binding ProductName}" FontSize="16" />
 
-                <TextBlock Text="Preço" Classes="rotulo" />
+                <TextBlock Text="Preço" Classes="label" />
                 <TextBox Text="{Binding ProductPrice}" PlaceholderText="1,50" FontSize="16" />
 
-                <TextBlock Text="Categoria" Classes="rotulo" />
+                <TextBlock Text="Categoria" Classes="label" />
                 <ComboBox ItemsSource="{Binding CategoryChoices}" SelectedItem="{Binding ProductCategory}"
                           HorizontalAlignment="Stretch" FontSize="16">
                   <ComboBox.ItemTemplate>
@@ -133,14 +130,13 @@
                           Content="Ativo (aparece na venda)" />
                 <CheckBox IsChecked="{Binding ProductTrackStock}" Content="Controlar stock" />
 
-                <TextBlock Text="Stock" Classes="rotulo" IsVisible="{Binding ProductTrackStock}" />
+                <TextBlock Text="Stock" Classes="label" IsVisible="{Binding ProductTrackStock}" />
                 <TextBox Text="{Binding ProductStock}" FontSize="16" Width="140"
                          HorizontalAlignment="Left" IsVisible="{Binding ProductTrackStock}" />
 
-                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,20,0,0">
-                  <Button Content="Guardar" FontWeight="Bold" Background="#2E7D32" Foreground="White"
-                          Height="44" Width="130" Command="{Binding SaveProductCommand}" />
-                  <Button Content="Apagar" Height="44" Width="110"
+                <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,26,0,0">
+                  <Button Content="Guardar" Classes="primary" Height="48" Width="140" Command="{Binding SaveProductCommand}" />
+                  <Button Content="Apagar" Classes="danger-quiet" Height="48" Width="120"
                           Command="{Binding DeleteProductCommand}" />
                 </StackPanel>
               </StackPanel>
@@ -150,7 +146,7 @@
       </TabItem>
     </TabControl>
 
-    <Border Grid.Row="1" Padding="12,8" Background="{DynamicResource SystemChromeLowColor}">
+    <Border Grid.Row="1" Padding="20,12" Background="{DynamicResource Surface1}" BorderBrush="{DynamicResource LineSoft}" BorderThickness="0,1,0,0">
       <TextBlock Text="{Binding StatusMessage}" FontSize="14" />
     </Border>
   </Grid>

@@ -5,16 +5,18 @@ using SellingPoint.Printing;
 namespace SellingPoint.App;
 
 /// <summary>
-/// The composition root. Six objects wired by hand - a container would be more
-/// ceremony than the whole application.
+/// The composition root. A handful of objects wired by hand - a container would be
+/// more ceremony than the whole application.
 /// </summary>
-public sealed class AppServices
+public sealed class AppServices : IDisposable
 {
     public Db Db { get; }
     public CatalogRepository Catalog { get; }
     public SalesRepository Sales { get; }
     public SettingsRepository Settings { get; }
+    public PrintQueueRepository PrintQueue { get; }
     public TicketPrinter Printer { get; }
+    public PrintService Print { get; }
 
     public AppServices(string? databasePath = null)
     {
@@ -24,7 +26,11 @@ public sealed class AppServices
         Catalog = new CatalogRepository(Db);
         Sales = new SalesRepository(Db);
         Settings = new SettingsRepository(Db);
+        PrintQueue = new PrintQueueRepository(Db);
+
         Printer = new TicketPrinter(BuildTransport(), BuildTicketOptions());
+        Print = new PrintService(PrintQueue, Settings, Printer);
+        Print.Start();
     }
 
     /// <summary>Where the file transport drops slips when no printer is configured.</summary>
@@ -34,11 +40,14 @@ public sealed class AppServices
     public OutOfStockBehaviour OutOfStock =>
         Settings.Get(SettingKeys.OutOfStockBehaviour, OutOfStockBehaviour.Warn);
 
+    public int SerialBaudRate => Settings.GetInt(SettingKeys.PrinterBaudRate, 9600);
+
     /// <summary>Re-reads every printer setting. Called when Settings are saved.</summary>
     public void ReloadPrinter()
     {
         Printer.Options = BuildTicketOptions();
         Printer.Transport = BuildTransport();
+        Print.RetryNow();
     }
 
     public TicketOptions BuildTicketOptions() => new()
@@ -60,9 +69,11 @@ public sealed class AppServices
         return Settings.GetString(SettingKeys.PrinterTransport, "file") switch
         {
             "network" => new NetworkTransport(target),
-            "serial" => new SerialTransport(target),
+            "serial" => new SerialTransport(target, SerialBaudRate),
             "windows" => new WindowsRawTransport(target),
             _ => new FileTransport(string.IsNullOrWhiteSpace(target) ? DefaultTicketFolder : target)
         };
     }
+
+    public void Dispose() => Print.Dispose();
 }

@@ -18,7 +18,13 @@ public partial class App : Application
             // --tab= opens straight onto a screen. Both exist for development and
             // for talking someone through a problem over the phone.
             var databasePath = Argument(desktop.Args, "--db=");
-            var viewModel = new MainWindowViewModel(new AppServices(databasePath));
+            var services = new AppServices(databasePath);
+
+            // Stops the print worker cleanly; anything still queued is on disk and
+            // will be picked up next time the app opens.
+            desktop.Exit += (_, _) => services.Dispose();
+
+            var viewModel = new MainWindowViewModel(services);
 
             if (int.TryParse(Argument(desktop.Args, "--tab="), out var tab))
                 viewModel.SelectedTab = tab;

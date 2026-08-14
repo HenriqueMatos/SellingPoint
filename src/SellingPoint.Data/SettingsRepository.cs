@@ -43,6 +43,7 @@ public static class SettingKeys
     public const string OutOfStockBehaviour = "out_of_stock_behaviour";
     public const string PrinterTransport = "printer_transport";
     public const string PrinterTarget = "printer_target";
+    public const string PrinterBaudRate = "printer_baud_rate";
     public const string PaperColumns = "paper_columns";
     public const string TicketHeader = "ticket_header";
     public const string TicketFooter = "ticket_footer";

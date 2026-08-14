@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SellingPoint.Core;
 using SellingPoint.Data;
+using SellingPoint.Printing;
 
 namespace SellingPoint.App.ViewModels;
 
@@ -41,8 +42,11 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
         new("Impedir a venda", OutOfStockBehaviour.Block)
     ];
 
+    public ObservableCollection<string> AvailablePorts { get; } = [];
+
     [ObservableProperty] public partial Choice<string>? Transport { get; set; }
     [ObservableProperty] public partial string Target { get; set; } = "";
+    [ObservableProperty] public partial bool IsSerial { get; set; }
     [ObservableProperty] public partial string TargetHint { get; set; } = "";
     [ObservableProperty] public partial Choice<int>? PaperWidth { get; set; }
     [ObservableProperty] public partial Choice<int>? CodePage { get; set; }
@@ -79,7 +83,13 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
         StatusMessage = $"Impressora atual: {services.Printer.Transport.Describe()}";
     }
 
-    partial void OnTransportChanged(Choice<string>? value) => TargetHint = value?.Value switch
+    partial void OnTransportChanged(Choice<string>? value)
+    {
+        IsSerial = value?.Value == "serial";
+        TargetHint = Hint(value?.Value);
+    }
+
+    private string Hint(string? transport) => transport switch
     {
         "network" => "Endereço IP, por exemplo 192.168.1.50 ou 192.168.1.50:9100",
         "serial" => "Nome da porta, por exemplo COM3",
@@ -119,15 +129,36 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
     {
         Save();
 
-        try
+        var status = await Task.Run(() => services.Print.CheckStatus());
+        services.Print.EnqueueTest();
+
+        StatusMessage = status.CanPrint
+            ? $"Teste enviado para {services.Printer.Transport.Describe()}. Confirme a linha dos acentos."
+            : $"{status.Message}. O teste fica em espera e sai assim que a impressora responder.";
+    }
+
+    /// <summary>Lists the COM ports on the machine so the right one can be chosen
+    /// without going into the Gestor de Dispositivos.</summary>
+    [RelayCommand]
+    private async Task ScanPorts()
+    {
+        StatusMessage = "A procurar portas...";
+        var probes = await Task.Run(() => PrinterLocator.ScanAll(services.SerialBaudRate));
+
+        AvailablePorts.Clear();
+        foreach (var probe in probes) AvailablePorts.Add(probe.PortName);
+
+        var printer = probes.FirstOrDefault(p => p.AnsweredAsPrinter);
+        if (printer is not null)
         {
-            await Task.Run(services.Printer.PrintTest);
-            StatusMessage = $"Teste enviado para {services.Printer.Transport.Describe()}.";
+            Target = printer.PortName;
+            StatusMessage = $"Impressora encontrada em {printer.PortName}. Carregue em Guardar.";
+            return;
         }
-        catch (Exception e)
-        {
-            StatusMessage = $"Falha no teste: {e.Message}";
-        }
+
+        StatusMessage = probes.Count == 0
+            ? "Não há portas série nesta máquina."
+            : $"Portas encontradas: {string.Join(", ", probes.Select(p => p.PortName))}. Nenhuma respondeu como impressora.";
     }
 
     [RelayCommand]

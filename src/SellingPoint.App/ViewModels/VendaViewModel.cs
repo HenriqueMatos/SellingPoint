@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using Avalonia.Media;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SellingPoint.Core;
@@ -7,12 +9,24 @@ using SellingPoint.Printing;
 namespace SellingPoint.App.ViewModels;
 
 /// <summary>The till. Press products, take money, print.</summary>
-public partial class VendaViewModel(AppServices services) : ViewModelBase
+public partial class VendaViewModel : ViewModelBase
 {
+    private readonly AppServices services;
     private readonly Cart _cart = new();
     private List<Category> _categories = [];
     private List<Product> _products = [];
     private Session? _session;
+
+    public VendaViewModel(AppServices appServices)
+    {
+        services = appServices;
+        Diagnostics = new PrinterDiagnosticsViewModel(appServices);
+
+        services.Print.Changed += OnPrintServiceChanged;
+        RefreshPrinterChip();
+    }
+
+    public PrinterDiagnosticsViewModel Diagnostics { get; }
 
     public ObservableCollection<CategoryTabViewModel> Categories { get; } = [];
     public ObservableCollection<ProductButtonViewModel> Products { get; } = [];
@@ -21,6 +35,7 @@ public partial class VendaViewModel(AppServices services) : ViewModelBase
 
     [ObservableProperty] public partial CategoryTabViewModel? SelectedCategory { get; set; }
     [ObservableProperty] public partial string TotalText { get; set; } = Money.Format(0);
+    [ObservableProperty] public partial string CartCountText { get; set; } = "";
     [ObservableProperty] public partial string StatusMessage { get; set; } = "";
     [ObservableProperty] public partial bool IsCartEmpty { get; set; } = true;
 
@@ -38,12 +53,23 @@ public partial class VendaViewModel(AppServices services) : ViewModelBase
     [ObservableProperty] public partial string SessionNameEntry { get; set; } = "";
     [ObservableProperty] public partial string SessionFloatEntry { get; set; } = "";
 
+    [ObservableProperty] public partial bool IsDiagnosticsOpen { get; set; }
+    [ObservableProperty] public partial string PrinterChipText { get; set; } = "";
+    [ObservableProperty] public partial IBrush PrinterChipBrush { get; set; } = Brushes.Gray;
+    [ObservableProperty] public partial bool PrinterNeedsAttention { get; set; }
+
     public int CashReceivedCents => int.TryParse(CashEntry, out var cents) ? cents : 0;
     public string CashReceivedText => Money.Format(CashReceivedCents);
     public string ChangeText => Tender.TryChange(_cart.TotalCents, CashReceivedCents, out var change)
         ? Money.Format(change)
         : "--";
     public bool CanConfirmCash => !_cart.IsEmpty && CashReceivedCents >= _cart.TotalCents;
+
+    /// <summary>
+    /// Paying needs both a cart and an open session. Without this the buttons look
+    /// live, do nothing when pressed, and leave the operator tapping harder.
+    /// </summary>
+    public bool CanPay => !IsCartEmpty && HasOpenSession;
 
     public void Load()
     {
@@ -128,13 +154,13 @@ public partial class VendaViewModel(AppServices services) : ViewModelBase
     private void CashClear() => CashEntry = "";
 
     [RelayCommand]
-    private Task ConfirmCash() => Complete(PaymentMethod.Cash, CashReceivedCents);
+    private void ConfirmCash() => Complete(PaymentMethod.Cash, CashReceivedCents);
 
     [RelayCommand]
-    private Task PayCard() => Complete(PaymentMethod.Card, 0);
+    private void PayCard() => Complete(PaymentMethod.Card, 0);
 
     [RelayCommand]
-    private async Task ReprintLast()
+    private void ReprintLast()
     {
         if (_session is null) return;
 
@@ -145,10 +171,19 @@ public partial class VendaViewModel(AppServices services) : ViewModelBase
             return;
         }
 
-        StatusMessage = await PrintAsync(last)
-            ? $"Talão {TicketBuilder.Reference(last.TicketNumber)} reimpresso."
-            : StatusMessage;
+        services.Print.Enqueue(last);
+        StatusMessage = $"Talão {TicketBuilder.Reference(last.TicketNumber)} enviado outra vez.";
     }
+
+    [RelayCommand]
+    private void OpenDiagnostics()
+    {
+        Diagnostics.Refresh();
+        IsDiagnosticsOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseDiagnostics() => IsDiagnosticsOpen = false;
 
     [RelayCommand]
     private void TogglePreview()
@@ -187,7 +222,7 @@ public partial class VendaViewModel(AppServices services) : ViewModelBase
         StatusMessage = $"Sessão aberta com {Money.Format(floatCents)} de fundo de caixa.";
     }
 
-    private async Task Complete(PaymentMethod method, int cashReceivedCents)
+    private void Complete(PaymentMethod method, int cashReceivedCents)
     {
         if (_session is null)
         {
@@ -218,9 +253,15 @@ public partial class VendaViewModel(AppServices services) : ViewModelBase
             ? $" Troco {Money.Format(sale.ChangeCents)}."
             : "";
 
-        StatusMessage = await PrintAsync(sale)
-            ? $"Talão {reference} impresso.{change}"
-            : $"Venda {reference} gravada.{change} {StatusMessage}";
+        // Queued rather than printed. A printer that is out of paper, unplugged, or
+        // has been given a new COM number by Windows delays the ticket instead of
+        // losing it - the queue drains itself the moment one answers again.
+        var slips = services.Print.Enqueue(sale);
+        var waiting = services.Print.PendingCount > slips
+            ? $" {services.Print.PendingCount} talões à espera da impressora."
+            : "";
+
+        StatusMessage = $"Talão {reference} — {slips} senha(s).{change}{waiting}";
 
         _cart.Clear();
         IsCashPanelOpen = false;
@@ -233,23 +274,36 @@ public partial class VendaViewModel(AppServices services) : ViewModelBase
         RefreshCart();
     }
 
+    private void OnPrintServiceChanged() => Dispatcher.UIThread.Post(RefreshPrinterChip);
+
     /// <summary>
-    /// Off the UI thread: a network printer that has gone away blocks for the
-    /// whole connect timeout, and a frozen till in front of a queue is its own
-    /// kind of failure.
+    /// The one indicator on the till that says whether paper is coming out. Red is
+    /// meant to be noticed from across a counter.
     /// </summary>
-    private async Task<bool> PrintAsync(Sale sale)
+    private void RefreshPrinterChip()
     {
-        try
+        var print = services.Print;
+        var status = print.Status;
+        var pending = print.PendingCount;
+
+        PrinterNeedsAttention = !status.CanPrint || (pending > 0 && print.LastError is not null);
+
+        PrinterChipBrush = status.State switch
         {
-            await Task.Run(() => services.Printer.Print(sale));
-            return true;
-        }
-        catch (Exception e)
+            _ when print.IsPaused => Brushes.SlateGray,
+            PrinterState.Ready or PrinterState.Unknown => Brushes.MediumSeaGreen,
+            PrinterState.PaperLow => Brushes.Goldenrod,
+            _ => Brushes.IndianRed
+        };
+
+        var queue = pending switch
         {
-            StatusMessage = $"Falha na impressão: {e.Message}";
-            return false;
-        }
+            0 => "",
+            1 => " · 1 à espera",
+            _ => $" · {pending} à espera"
+        };
+
+        PrinterChipText = (print.IsPaused ? "Impressão em pausa" : status.Message) + queue;
     }
 
     private void RefreshProducts()
@@ -273,6 +327,13 @@ public partial class VendaViewModel(AppServices services) : ViewModelBase
 
         TotalText = Money.Format(_cart.TotalCents);
         IsCartEmpty = _cart.IsEmpty;
+        OnPropertyChanged(nameof(CanPay));
+        CartCountText = _cart.ItemCount switch
+        {
+            0 => "",
+            1 => "1 artigo",
+            var n => $"{n} artigos"
+        };
 
         OnPropertyChanged(nameof(CanConfirmCash));
         OnPropertyChanged(nameof(ChangeText));
@@ -304,5 +365,6 @@ public partial class VendaViewModel(AppServices services) : ViewModelBase
             ? "Sem sessão aberta"
             : $"{_session.Name} — aberta {_session.OpenedAt:dd/MM HH:mm}";
         CanReprint = _session is not null && services.Sales.GetLastSale(_session.Id) is not null;
+        OnPropertyChanged(nameof(CanPay));
     }
 }

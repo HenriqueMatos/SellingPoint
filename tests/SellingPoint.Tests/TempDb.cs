@@ -15,6 +15,7 @@ public sealed class TempDb : IDisposable
     public CatalogRepository Catalog { get; }
     public SalesRepository Sales { get; }
     public SettingsRepository Settings { get; }
+    public PrintQueueRepository PrintQueue { get; }
 
     public TempDb(bool seed = true)
     {
@@ -25,6 +26,7 @@ public sealed class TempDb : IDisposable
         Catalog = new CatalogRepository(Db);
         Sales = new SalesRepository(Db);
         Settings = new SettingsRepository(Db);
+        PrintQueue = new PrintQueueRepository(Db);
     }
 
     public void Dispose()
