@@ -12,6 +12,6 @@
     <DebugType>embedded</DebugType>
     <!-- The number the app compares against the latest GitHub release. Raise it
          with ./release.sh, which tags and publishes to match. -->
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 </Project>
