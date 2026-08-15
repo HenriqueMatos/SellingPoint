@@ -6,9 +6,9 @@ public class SlipRendererTests
 {
     private static readonly DateTime Now = new(2026, 8, 14, 22, 31, 0);
 
-    private static TicketOptions Options(int columns = 48) => new()
+    private static TicketOptions Options(PaperWidth paper = PaperWidth.Wide) => new()
     {
-        Columns = columns, Header = "FESTA DA ALDEIA", Footer = "Obrigado!"
+        Paper = paper, Header = "FESTA DA ALDEIA", Footer = "Obrigado!"
     };
 
     private static GroupedSlip BarSlip() => new(
@@ -22,9 +22,9 @@ public class SlipRendererTests
     [Fact]
     public void Nothing_ever_exceeds_the_paper_width()
     {
-        foreach (var columns in new[] { 32, 48 })
+        foreach (var paper in new[] { PaperWidth.Narrow, PaperWidth.Wide })
         {
-            var options = Options(columns);
+            var options = Options(paper);
             var slips = new Slip[]
             {
                 BarSlip(),
@@ -32,7 +32,7 @@ public class SlipRendererTests
             };
 
             foreach (var line in slips.SelectMany(s => RenderText(s, options)))
-                Assert.True(line.Length <= columns, $"'{line}' is {line.Length} of {columns} columns");
+                Assert.True(line.Length <= options.Columns, $"'{line}' is {line.Length} of {options.Columns} columns");
         }
     }
 
@@ -71,7 +71,7 @@ public class SlipRendererTests
         var slip = new GroupedSlip("Bar", "#0042", Now,
             [new SlipItem(1, "Sandes de Leitao com Molho da Casa e Batata", 400)], 400);
 
-        var line = Assert.Single(RenderText(slip, Options(32)), l => l.StartsWith("1x Sandes"));
+        var line = Assert.Single(RenderText(slip, Options(PaperWidth.Narrow)), l => l.StartsWith("1x Sandes"));
 
         Assert.Equal(32, line.Length);
         Assert.EndsWith("4,00 €", line);
@@ -96,7 +96,7 @@ public class SlipRendererTests
         // 26 characters will not fit in 32/2 = 16 columns of double-width glyphs.
         var senha = new SenhaSlip("Bar", "#0042-1", Now, "Sandes de Leitao com Molho", 400);
 
-        var lines = SlipRenderer.Render(senha, Options(32));
+        var lines = SlipRenderer.Render(senha, Options(PaperWidth.Narrow));
         var name = Assert.Single(lines, l => l.Text.StartsWith("SANDES"));
 
         Assert.False(name.Style.HasFlag(SlipStyle.DoubleWidth));

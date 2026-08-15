@@ -57,7 +57,7 @@ public class PrintServiceTests
     }
 
     private static PrintService Build(TempDb t, FlakyTransport transport)
-        => new(t.PrintQueue, t.Settings, new TicketPrinter(transport, new TicketOptions { Columns = 48 }));
+        => new(t.PrintQueue, t.Settings, new TicketPrinter(transport, new TicketOptions()));
 
     [Fact]
     public async Task A_slip_queued_while_the_printer_is_down_comes_out_when_it_is_back()

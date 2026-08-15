@@ -38,7 +38,7 @@ No .NET install, no admin rights, nothing else to copy. Data lives in
 
 ```sh
 dotnet run --project src/SellingPoint.App        # run
-dotnet test                                      # 215 tests
+dotnet test                                      # 226 tests
 ```
 
 Build the Windows executable — this works from macOS and Linux too, no Windows
@@ -123,6 +123,41 @@ finding only those two means the printer is a Windows print queue instead.
 
 The Windows print-queue path is one-way, so on it the app can print but cannot
 read status — no *sem papel* or *tampa aberta*. Serial and network can do both.
+
+## Letter size, and why nothing overflows
+
+On a thermal printer the letter size and the number of characters per line are
+the same thing, not two settings:
+
+| Paper | Letters | Characters per line |
+|---|---|---|
+| 80 mm | Small | 64 |
+| 80 mm | Normal | 48 |
+| 80 mm | Large | 24 |
+| 58 mm | Small | 42 |
+| 58 mm | Normal | 32 |
+| 58 mm | Large | 16 |
+
+So the column count is **derived from the paper and the letter size and never
+entered**. A hand-typed 48 sitting next to a doubled font is exactly how every
+line overflows and the price column stops lining up; with one source for the
+number, the two cannot disagree.
+
+Three things keep it that way, in order of strength:
+
+1. Layout truncates what will not fit — a long name loses its end, never the
+   price.
+2. A test walks **every** paper × letter size × combination of the ticket
+   switches — 192 of them — rendering deliberately over-long product names and
+   asserting no line exceeds the columns. That is the guarantee: checked, not
+   promised.
+3. In the encoder, the base size and a line's own emphasis combine by taking the
+   larger, never by multiplying. A senha already doubles its product name; at the
+   large base size, multiplying would give quadruple-width letters.
+
+Settings shows the slip drawn at the real width beside the controls, updating as
+they change, and warns when a size starts cutting names — so the truncation is
+seen there rather than discovered on paper.
 
 ## Saving paper
 

@@ -52,8 +52,16 @@ public sealed record SlipTextLine(string Text, SlipAlign Align = SlipAlign.Left,
 
 public sealed record TicketOptions
 {
-    /// <summary>Characters per line: 48 on 80mm paper, 32 on 58mm.</summary>
-    public int Columns { get; init; } = 48;
+    public PaperWidth Paper { get; init; } = PaperWidth.Wide;
+    public TicketFontSize FontSize { get; init; } = TicketFontSize.Normal;
+
+    /// <summary>
+    /// Characters per line. Derived from the paper and the letter size rather than
+    /// set, because on a thermal printer those are the same thing: a hand-entered
+    /// column count that disagrees with the font is exactly how every line
+    /// overflows and the price column stops lining up.
+    /// </summary>
+    public int Columns => PaperFormat.Columns(Paper, FontSize);
 
     public string Header { get; init; } = "";
     public string Footer { get; init; } = "Obrigado!";

@@ -53,6 +53,18 @@ public sealed class AppServices : IDisposable
 
     public int SerialBaudRate => Settings.GetInt(SettingKeys.PrinterBaudRate, 9600);
 
+    /// <summary>
+    /// Older databases stored a hand-entered column count. 32 could only have meant
+    /// 58 mm paper at the normal font, and anything else 80 mm, so the old setting
+    /// converts without asking anyone anything.
+    /// </summary>
+    public PaperWidth PaperWidthSetting =>
+        Settings.Get(SettingKeys.PaperWidth, Settings.GetInt(SettingKeys.PaperColumns, 48) == 32
+            ? PaperWidth.Narrow
+            : PaperWidth.Wide);
+
+    public TicketFontSize FontSizeSetting => Settings.Get(SettingKeys.TicketFontSize, TicketFontSize.Normal);
+
     /// <summary>Re-reads every printer setting. Called when Settings are saved.</summary>
     public void ReloadPrinter()
     {
@@ -63,7 +75,8 @@ public sealed class AppServices : IDisposable
 
     public TicketOptions BuildTicketOptions() => new()
     {
-        Columns = Settings.GetInt(SettingKeys.PaperColumns, 48),
+        Paper = PaperWidthSetting,
+        FontSize = FontSizeSetting,
         Header = Settings.GetString(SettingKeys.TicketHeader, ""),
         Footer = Settings.GetString(SettingKeys.TicketFooter, "Obrigado!"),
         ShowPriceOnSenha = Settings.GetBool(SettingKeys.ShowPriceOnSenha, true),

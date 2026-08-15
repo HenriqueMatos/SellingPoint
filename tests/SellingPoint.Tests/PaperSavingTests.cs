@@ -12,7 +12,7 @@ public class PaperSavingTests
 
     private static TicketOptions Full => new()
     {
-        Columns = 32, Header = "FESTA DA ALDEIA", Footer = "Obrigado!"
+        Paper = PaperWidth.Narrow, Header = "FESTA DA ALDEIA", Footer = "Obrigado!"
     };
 
     private static GroupedSlip BarSlip(bool summary = false) => new(

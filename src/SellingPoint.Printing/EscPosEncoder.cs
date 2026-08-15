@@ -36,6 +36,10 @@ public static class EscPosEncoder
         if (CodePageSlots.TryGetValue(options.CodePage, out var slot))
             Write(stream, Esc, (byte)'t', slot);
 
+        // ESC M picks the typeface. Font B is narrower, which is what buys the
+        // extra columns at the small size.
+        Write(stream, Esc, (byte)'M', PaperFormat.FontCommand(options.FontSize));
+
         // ESC 3 n sets the line height in dots. The printer default is 30; going
         // to 24 takes a fifth off every line on every ticket without removing a
         // single thing from what is printed.
@@ -46,7 +50,7 @@ public static class EscPosEncoder
         {
             Write(stream, Esc, (byte)'a', Alignment(line.Align));
             Write(stream, Esc, (byte)'E', (byte)(line.Style.HasFlag(SlipStyle.Bold) ? 1 : 0));
-            Write(stream, Gs, (byte)'!', Size(line.Style));
+            Write(stream, Gs, (byte)'!', Size(line.Style, options.FontSize));
 
             var text = options.FoldAccents ? Accents.Fold(line.Text) : line.Text;
             // A single 'E' rather than the '?' the fallback would give, and rather
@@ -65,7 +69,7 @@ public static class EscPosEncoder
         // few lines cuts through the last line of text.
         Write(stream, Esc, (byte)'a', 0);
         Write(stream, Esc, (byte)'E', 0);
-        Write(stream, Gs, (byte)'!', 0);
+        Write(stream, Gs, (byte)'!', Size(SlipStyle.None, options.FontSize));
         Write(stream, Esc, (byte)'d', (byte)Math.Clamp(options.FeedLinesBeforeCut, 0, 255));
         Write(stream, Gs, (byte)'V', 66, 0);
 
@@ -75,13 +79,22 @@ public static class EscPosEncoder
         return stream.ToArray();
     }
 
-    /// <summary>GS ! packs the width multiplier into the high nibble and the height into the low one.</summary>
-    private static byte Size(SlipStyle style)
+    /// <summary>
+    /// GS ! packs the width multiplier into the high nibble and the height into the
+    /// low one.
+    ///
+    /// The base size and the line's own emphasis are combined by taking the larger,
+    /// never by multiplying. A senha already doubles its product name; at the large
+    /// base size, multiplying would give quadruple-width letters and a line four
+    /// times too long for the paper - which is the overflow this whole change
+    /// exists to prevent.
+    /// </summary>
+    private static byte Size(SlipStyle style, TicketFontSize font)
     {
-        byte size = 0;
-        if (style.HasFlag(SlipStyle.DoubleWidth)) size |= 0x10;
-        if (style.HasFlag(SlipStyle.DoubleHeight)) size |= 0x01;
-        return size;
+        var width = Math.Max(PaperFormat.WidthMultiplier(font), style.HasFlag(SlipStyle.DoubleWidth) ? 2 : 1);
+        var height = Math.Max(PaperFormat.HeightMultiplier(font), style.HasFlag(SlipStyle.DoubleHeight) ? 2 : 1);
+
+        return (byte)(((width - 1) << 4) | (height - 1));
     }
 
     private static byte Alignment(SlipAlign align) => align switch

@@ -22,10 +22,19 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
         new("Impressora do Windows", "windows")
     ];
 
-    public ObservableCollection<Choice<int>> PaperWidths { get; } =
+    public ObservableCollection<Choice<PaperWidth>> Papers { get; } =
     [
-        new("80 mm — 48 colunas", 48),
-        new("58 mm — 32 colunas", 32)
+        new("80 mm (rolo largo)", PaperWidth.Wide),
+        new("58 mm (rolo estreito)", PaperWidth.Narrow)
+    ];
+
+    // The column count is not offered: it follows from these two, because on a
+    // thermal printer the letter size and the characters per line are one thing.
+    public ObservableCollection<Choice<TicketFontSize>> FontSizes { get; } =
+    [
+        new("Pequena — cabe mais texto", TicketFontSize.Small),
+        new("Normal", TicketFontSize.Normal),
+        new("Grande — metade dos caracteres por linha", TicketFontSize.Large)
     ];
 
     public ObservableCollection<Choice<int>> CodePages { get; } =
@@ -52,7 +61,12 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
     [ObservableProperty] public partial bool ShowTargetList { get; set; }
     [ObservableProperty] public partial string TargetListHint { get; set; } = "";
     [ObservableProperty] public partial string TargetHint { get; set; } = "";
-    [ObservableProperty] public partial Choice<int>? PaperWidth { get; set; }
+    [ObservableProperty] public partial Choice<PaperWidth>? Paper { get; set; }
+    [ObservableProperty] public partial Choice<TicketFontSize>? FontSize { get; set; }
+    [ObservableProperty] public partial string FormatText { get; set; } = "";
+    [ObservableProperty] public partial string TicketPreview { get; set; } = "";
+    [ObservableProperty] public partial bool NamesGetCut { get; set; }
+    [ObservableProperty] public partial string CutExample { get; set; } = "";
     [ObservableProperty] public partial Choice<int>? CodePage { get; set; }
     [ObservableProperty] public partial Choice<OutOfStockBehaviour>? StockBehaviour { get; set; }
 
@@ -94,7 +108,8 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
 
         Transport = Pick(Transports, settings.GetString(SettingKeys.PrinterTransport, "file"));
         Target = settings.GetString(SettingKeys.PrinterTarget, "");
-        PaperWidth = Pick(PaperWidths, settings.GetInt(SettingKeys.PaperColumns, 48));
+        Paper = Pick(Papers, services.PaperWidthSetting);
+        FontSize = Pick(FontSizes, services.FontSizeSetting);
         CodePage = Pick(CodePages, settings.GetInt(SettingKeys.CodePage, 858));
         StockBehaviour = Pick(StockBehaviours, services.OutOfStock);
 
@@ -135,7 +150,8 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
     partial void OnShowPriceOnSenhaChanged(bool value) => RefreshPaperCost();
     partial void OnLineSpacingChanged(string value) => RefreshPaperCost();
     partial void OnFeedLinesChanged(string value) => RefreshPaperCost();
-    partial void OnPaperWidthChanged(Choice<int>? value) => RefreshPaperCost();
+    partial void OnPaperChanged(Choice<PaperWidth>? value) => RefreshPaperCost();
+    partial void OnFontSizeChanged(Choice<TicketFontSize>? value) => RefreshPaperCost();
     partial void OnHeaderChanged(string value) => RefreshPaperCost();
     partial void OnFooterChanged(string value) => RefreshPaperCost();
 
@@ -150,7 +166,8 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
     {
         var options = new TicketOptions
         {
-            Columns = PaperWidth?.Value ?? 48,
+            Paper = Paper?.Value ?? PaperWidth.Wide,
+            FontSize = FontSize?.Value ?? TicketFontSize.Normal,
             Header = Header,
             Footer = Footer,
             ShowPriceOnSenha = ShowPriceOnSenha,
@@ -167,6 +184,45 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
 
         PaperCostText = $"Talão de 2 artigos: {group}.  Senha: {senha}.";
         FeedTooShort = ParsedFeed < 3;
+        FormatText = PaperFormat.Describe(options.Paper, options.FontSize);
+
+        RefreshPreview(options);
+    }
+
+    /// <summary>
+    /// Draws the real slip at the real width, so the cut is seen here rather than
+    /// discovered on the paper. The sample name is deliberately a long one.
+    /// </summary>
+    private void RefreshPreview(TicketOptions options)
+    {
+        var sale = new Sale
+        {
+            TicketNumber = 42,
+            CreatedAt = DateTime.Now,
+            TotalCents = 750,
+            Lines =
+            [
+                new SaleLine { ProductName = "Sandes de Leitão", Qty = 1, UnitPriceCents = 400,
+                               LineTotalCents = 400, PrintGroup = "Cozinha", SlipMode = SlipMode.Grouped,
+                               CategoryName = "Comida" },
+                new SaleLine { ProductName = "Cerveja", Qty = 2, UnitPriceCents = 150,
+                               LineTotalCents = 300, PrintGroup = "Bar", SlipMode = SlipMode.PerUnit,
+                               CategoryName = "Bebidas" }
+            ]
+        };
+
+        var slips = TicketBuilder.Build(sale, options);
+        TicketPreview = SlipPreview.ToText(slips, options);
+
+        // Warn only when a name is genuinely losing letters, not merely because
+        // the line is full.
+        const string longest = "1x Sandes de Leitão";
+        var room = options.Columns - Money.Format(400).Length - 1;
+
+        NamesGetCut = room < longest.Length;
+        CutExample = NamesGetCut
+            ? $"«{longest}» fica «{Layout.Truncate(longest, Math.Max(room, 0))}»"
+            : "";
     }
 
     /// <summary>Tapping a name in the list is the same as typing it, without the typos.</summary>
@@ -224,7 +280,8 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
 
         settings.Set(SettingKeys.PrinterTransport, Transport?.Value ?? "file");
         settings.Set(SettingKeys.PrinterTarget, Target.Trim());
-        settings.Set(SettingKeys.PaperColumns, PaperWidth?.Value ?? 48);
+        settings.Set(SettingKeys.PaperWidth, Paper?.Value ?? PaperWidth.Wide);
+        settings.Set(SettingKeys.TicketFontSize, FontSize?.Value ?? TicketFontSize.Normal);
         settings.Set(SettingKeys.CodePage, CodePage?.Value ?? 858);
         settings.Set(SettingKeys.OutOfStockBehaviour, StockBehaviour?.Value ?? OutOfStockBehaviour.Warn);
 

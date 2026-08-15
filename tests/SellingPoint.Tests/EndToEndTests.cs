@@ -32,7 +32,7 @@ public class EndToEndTests
 
             var printer = new TicketPrinter(new FileTransport(folder), new TicketOptions
             {
-                Columns = 48, Header = "FESTA DA ALDEIA 2026", Footer = "Obrigado!"
+                Header = "FESTA DA ALDEIA 2026", Footer = "Obrigado!"
             });
 
             // --- open the till ------------------------------------------------
@@ -146,7 +146,7 @@ public class EndToEndTests
                 SaleFactory.Build(cart, t.Catalog.GetCategories().ToDictionary(c => c.Id),
                     PaymentMethod.Cash, 1000, Evening), session.Id);
 
-            var printer = new TicketPrinter(new FileTransport(folder), new TicketOptions { Columns = 48 });
+            var printer = new TicketPrinter(new FileTransport(folder), new TicketOptions());
 
             // Two slips now, not three: drinks and desserts share one.
             Assert.Equal(2, printer.Print(sale));

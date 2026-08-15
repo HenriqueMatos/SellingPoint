@@ -44,7 +44,10 @@ public static class SettingKeys
     public const string PrinterTransport = "printer_transport";
     public const string PrinterTarget = "printer_target";
     public const string PrinterBaudRate = "printer_baud_rate";
+    /// <summary>Kept only to migrate older databases; the app writes the two below.</summary>
     public const string PaperColumns = "paper_columns";
+    public const string PaperWidth = "paper_width";
+    public const string TicketFontSize = "ticket_font_size";
     public const string TicketHeader = "ticket_header";
     public const string TicketFooter = "ticket_footer";
     public const string ShowPriceOnSenha = "show_price_on_senha";

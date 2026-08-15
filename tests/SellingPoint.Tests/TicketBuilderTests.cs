@@ -5,7 +5,7 @@ namespace SellingPoint.Tests;
 public class TicketBuilderTests
 {
     private static readonly DateTime Now = new(2026, 8, 14, 22, 31, 0);
-    private static readonly TicketOptions Options = new() { Columns = 48 };
+    private static readonly TicketOptions Options = new();
 
     private static SaleLine Line(string name, int qty, int unitCents, string group, SlipMode mode) => new()
     {

@@ -4,7 +4,7 @@ namespace SellingPoint.Tests;
 
 public class EscPosEncoderTests
 {
-    private static readonly TicketOptions Options = new() { Columns = 48 };
+    private static readonly TicketOptions Options = new();
 
     private static bool Contains(byte[] haystack, params byte[] needle)
     {
