@@ -54,7 +54,13 @@ test -f publish/win-x64/SellingPoint.exe
 
 echo "==> Commit e etiqueta"
 git add Directory.Build.props
-git commit -q -m "Version $VERSION"
+# Já pode estar no número pedido — a primeira versão, ou uma repetição depois de
+# um erro. Nesse caso não há nada a confirmar e seguimos para a etiqueta.
+if git diff --cached --quiet; then
+  echo "    (Directory.Build.props já está em $VERSION)"
+else
+  git commit -q -m "Version $VERSION"
+fi
 git tag "v$VERSION"
 git push --quiet
 git push --quiet origin "v$VERSION"
