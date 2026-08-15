@@ -20,9 +20,20 @@ public partial class App : Application
             var databasePath = Argument(desktop.Args, "--db=");
             var services = new AppServices(databasePath);
 
-            // Stops the print worker cleanly; anything still queued is on disk and
-            // will be picked up next time the app opens.
-            desktop.Exit += (_, _) => services.Dispose();
+            // The previous version, left behind by the last swap.
+            UpdateInstaller.CleanUp(Environment.ProcessPath);
+
+            desktop.Exit += (_, _) =>
+            {
+                // Stops the print worker cleanly; anything still queued is on disk
+                // and will be picked up next time the app opens.
+                services.Dispose();
+
+                // Windows will not let a running program be overwritten, but it will
+                // let it be renamed - so the swap happens here, on the way out, and
+                // the next launch is the new version.
+                services.Installer.ApplyPending(Environment.ProcessPath);
+            };
 
             var viewModel = new MainWindowViewModel(services);
 

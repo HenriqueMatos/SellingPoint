@@ -1,3 +1,4 @@
+using System.Net.Http;
 using SellingPoint.Core;
 using SellingPoint.Data;
 using SellingPoint.Printing;
@@ -18,6 +19,13 @@ public sealed class AppServices : IDisposable
     public TicketPrinter Printer { get; }
     public PrintService Print { get; }
 
+    public UpdateChecker Updates { get; }
+    public UpdateInstaller Installer { get; }
+    public HttpClient Http { get; } = new() { Timeout = TimeSpan.FromMinutes(5) };
+
+    /// <summary>Where the app publishes its releases.</summary>
+    public const string Repository = "HenriqueMatos/SellingPoint";
+
     public AppServices(string? databasePath = null)
     {
         Db = new Db(databasePath ?? Db.DefaultPath());
@@ -31,6 +39,9 @@ public sealed class AppServices : IDisposable
         Printer = new TicketPrinter(BuildTransport(), BuildTicketOptions());
         Print = new PrintService(PrintQueue, Settings, Printer);
         Print.Start();
+
+        Updates = new UpdateChecker(Http, Repository);
+        Installer = new UpdateInstaller(Path.Combine(Path.GetDirectoryName(Db.Path) ?? ".", "atualizacao"));
     }
 
     /// <summary>Where the file transport drops slips when no printer is configured.</summary>
@@ -81,5 +92,9 @@ public sealed class AppServices : IDisposable
         };
     }
 
-    public void Dispose() => Print.Dispose();
+    public void Dispose()
+    {
+        Print.Dispose();
+        Http.Dispose();
+    }
 }

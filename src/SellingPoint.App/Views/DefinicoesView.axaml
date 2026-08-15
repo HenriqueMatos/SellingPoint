@@ -124,6 +124,37 @@
         <TextBlock Text="Quando um produto fica sem stock" Classes="label" />
         <ComboBox ItemsSource="{Binding StockBehaviours}" SelectedItem="{Binding StockBehaviour}" />
 
+        <TextBlock Text="Versão" Classes="section" />
+        <TextBlock Text="{Binding VersionText}" FontSize="{DynamicResource TextBody}" LineHeight="26" />
+
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,10,0,0">
+          <Button Content="Procurar atualização" Command="{Binding CheckForUpdateCommand}"
+                  IsEnabled="{Binding !IsBusyWithUpdate}" />
+          <Button Content="Descarregar" Classes="primary" Command="{Binding DownloadUpdateCommand}"
+                  IsVisible="{Binding UpdateAvailable}" IsEnabled="{Binding !IsBusyWithUpdate}" />
+          <Button Content="Descartar" Classes="danger-quiet" Command="{Binding CancelUpdateCommand}"
+                  IsVisible="{Binding UpdateReady}" />
+        </StackPanel>
+
+        <TextBlock Text="{Binding UpdateStatus}" Classes="hint" Margin="0,8,0,0"
+                   IsVisible="{Binding UpdateStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+        <Border Background="{DynamicResource Surface2}" CornerRadius="8" Padding="12" Margin="0,8,0,0"
+                IsVisible="{Binding UpdateNotes, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+          <StackPanel>
+            <TextBlock Text="O que muda" Classes="hint" Margin="0,0,0,4" />
+            <TextBlock Text="{Binding UpdateNotes}" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <!-- Downloading mid-event is harmless; it is the swap that waits for the
+             app to close, and it must never happen with a session open. -->
+        <Border Background="#33D97706" CornerRadius="8" Padding="12" Margin="0,8,0,0"
+                IsVisible="{Binding UpdateBlockedBySession}">
+          <TextBlock TextWrapping="Wrap"
+                     Text="Tem uma sessão aberta. Pode descarregar agora, mas feche a sessão e o evento antes de fechar a aplicação — nunca troque de versão a meio de um evento." />
+        </Border>
+
         <TextBlock Text="Dados" Classes="section" />
         <TextBlock Text="{Binding DatabasePath}" FontSize="12" Opacity="0.7" TextWrapping="Wrap" />
 

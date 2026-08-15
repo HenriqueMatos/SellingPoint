@@ -75,6 +75,17 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
     [ObservableProperty] public partial bool OpenCashDrawer { get; set; }
 
     [ObservableProperty] public partial string DatabasePath { get; set; } = "";
+
+    // --- updates -----------------------------------------------------------
+    [ObservableProperty] public partial string VersionText { get; set; } = "";
+    [ObservableProperty] public partial string UpdateStatus { get; set; } = "";
+    [ObservableProperty] public partial string UpdateNotes { get; set; } = "";
+    [ObservableProperty] public partial bool UpdateAvailable { get; set; }
+    [ObservableProperty] public partial bool UpdateBlockedBySession { get; set; }
+    [ObservableProperty] public partial bool UpdateReady { get; set; }
+    [ObservableProperty] public partial bool IsBusyWithUpdate { get; set; }
+
+    private ReleaseInfo? _release;
     [ObservableProperty] public partial string StatusMessage { get; set; } = "";
 
     public void Load()
@@ -101,6 +112,10 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
         OpenCashDrawer = settings.GetBool(SettingKeys.OpenCashDrawer, false);
 
         DatabasePath = services.Db.Path;
+        VersionText = $"Versão {UpdateChecker.Current}";
+        UpdateReady = services.Installer.HasPendingUpdate;
+        if (UpdateReady) UpdateStatus = "Atualização descarregada. Fecha e volta a abrir para ficar aplicada.";
+
         RefreshTargets();
         RefreshPaperCost();
         StatusMessage = $"Impressora atual: {services.Printer.Transport.Describe()}";
@@ -271,6 +286,86 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
             ? "Não há portas série nesta máquina. Se a impressora está ligada por USB, veja em "
               + "Definições do Windows → Impressoras e scanners e use a ligação «Impressora do Windows»."
             : PrinterDiagnosticsViewModel.NoPrinterAdvice(probes);
+    }
+
+    /// <summary>
+    /// Asks GitHub what the latest version is. Only ever reports - a till must not
+    /// update itself with a queue at the counter.
+    /// </summary>
+    [RelayCommand]
+    private async Task CheckForUpdate()
+    {
+        IsBusyWithUpdate = true;
+        UpdateStatus = "A procurar...";
+        UpdateAvailable = false;
+        UpdateNotes = "";
+
+        try
+        {
+            _release = await services.Updates.LatestAsync();
+
+            if (_release is null)
+            {
+                UpdateStatus = "Não foi possível saber. Verifique a ligação à internet.";
+                return;
+            }
+
+            if (!UpdateChecker.IsNewer(_release.Version, UpdateChecker.Current))
+            {
+                UpdateStatus = "Já tem a versão mais recente.";
+                return;
+            }
+
+            UpdateAvailable = true;
+            UpdateNotes = _release.Notes;
+            UpdateStatus = $"Há a versão {_release.Version} ({_release.SizeText}).";
+
+            // Downloading is harmless mid-event; the swap is what waits.
+            UpdateBlockedBySession = services.Sales.GetOpenSession() is not null;
+        }
+        catch (Exception e)
+        {
+            UpdateStatus = $"Não foi possível procurar: {e.Message}";
+        }
+        finally
+        {
+            IsBusyWithUpdate = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task DownloadUpdate()
+    {
+        if (_release is null) return;
+
+        IsBusyWithUpdate = true;
+        UpdateStatus = "A descarregar...";
+
+        try
+        {
+            await services.Installer.DownloadAsync(services.Http, _release);
+
+            UpdateReady = true;
+            UpdateAvailable = false;
+            UpdateStatus = "Descarregada. Fecha e volta a abrir para ficar aplicada.";
+        }
+        catch (Exception e)
+        {
+            services.Installer.DiscardPending();
+            UpdateStatus = $"A descarga falhou: {e.Message}";
+        }
+        finally
+        {
+            IsBusyWithUpdate = false;
+        }
+    }
+
+    [RelayCommand]
+    private void CancelUpdate()
+    {
+        services.Installer.DiscardPending();
+        UpdateReady = false;
+        UpdateStatus = "Atualização descartada. Continua na versão atual.";
     }
 
     [RelayCommand]

@@ -38,7 +38,7 @@ No .NET install, no admin rights, nothing else to copy. Data lives in
 
 ```sh
 dotnet run --project src/SellingPoint.App        # run
-dotnet test                                      # 182 tests
+dotnet test                                      # 215 tests
 ```
 
 Build the Windows executable — this works from macOS and Linux too, no Windows
@@ -53,6 +53,34 @@ dotnet publish src/SellingPoint.App -c Release -r win-x64 --self-contained \
 Two arguments help during development and when talking someone through a
 problem: `--db=<path>` uses a different database, `--tab=<0-3>` opens straight
 onto a screen.
+
+## Versions and updating
+
+The app knows its own version and asks GitHub what the latest published one is.
+Settings → **Procurar atualização** compares them, shows what changed, and can
+download the new executable.
+
+**It only ever reports; it never acts on its own.** A till that updates itself
+in the middle of an event, with a queue at the counter, is a far worse outcome
+than one running a version behind. Downloading is safe at any time — it is the
+swap that waits.
+
+The swap uses the one thing Windows allows: a running program cannot be
+overwritten, but it *can* be renamed. So as the app closes, the running file is
+renamed aside and the downloaded one takes its place; the next launch is the new
+version, and the old copy is cleared the launch after that. If anything goes
+wrong the working copy is put straight back, so there is never a moment with no
+executable.
+
+Publishing a new version:
+
+```sh
+./release.sh 1.1.0 "Poupa papel e traz teclado próprio"
+```
+
+That raises the number, runs the tests, builds the Windows executable, tags,
+pushes, and creates the GitHub release with the `.exe` attached. It refuses to
+run on a dirty tree or over an existing tag.
 
 ## Fullscreen
 
