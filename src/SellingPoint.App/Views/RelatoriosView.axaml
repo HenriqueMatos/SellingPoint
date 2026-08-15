@@ -80,7 +80,7 @@
               <StackPanel IsVisible="{Binding IsSessionOpen}" Margin="0,14,0,0" Spacing="6">
                 <TextBlock Text="Fechar a sessão — conte o dinheiro na caixa" Opacity="0.7" />
                 <Grid ColumnDefinitions="200,Auto">
-                  <TextBox Grid.Column="0" Text="{Binding CountedEntry}" PlaceholderText="0,00" FontSize="16" />
+                  <TextBox Grid.Column="0" Text="{Binding CountedEntry}" PlaceholderText="0,00" Classes="numeric" FontSize="16" />
                   <Button Grid.Column="1" Content="Fechar sessão" Margin="8,0,0,0"
                           Classes="primary" Command="{Binding CloseSessionCommand}" />
                 </Grid>

@@ -152,7 +152,7 @@
                 <TextBox Text="{Binding ProductName}" FontSize="16" />
 
                 <TextBlock Text="Preço" Classes="label" />
-                <TextBox Text="{Binding ProductPrice}" PlaceholderText="1,50" FontSize="16" />
+                <TextBox Text="{Binding ProductPrice}" PlaceholderText="1,50" Classes="numeric" FontSize="16" />
 
                 <TextBlock Text="Categoria" Classes="label" />
                 <ComboBox ItemsSource="{Binding CategoryChoices}" SelectedItem="{Binding ProductCategory}"
@@ -169,7 +169,7 @@
                 <CheckBox IsChecked="{Binding ProductTrackStock}" Content="Controlar stock" />
 
                 <TextBlock Text="Stock" Classes="label" IsVisible="{Binding ProductTrackStock}" />
-                <TextBox Text="{Binding ProductStock}" FontSize="16" Width="140"
+                <TextBox Text="{Binding ProductStock}" Classes="numeric" FontSize="16" Width="140"
                          HorizontalAlignment="Left" IsVisible="{Binding ProductTrackStock}" />
 
                 <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,26,0,0">

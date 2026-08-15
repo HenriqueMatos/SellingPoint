@@ -10,6 +10,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public GestaoViewModel Gestao { get; }
     public RelatoriosViewModel Relatorios { get; }
     public DefinicoesViewModel Definicoes { get; }
+    public TouchKeyboardViewModel Keyboard { get; } = new();
 
     [ObservableProperty] public partial int SelectedTab { get; set; }
 

@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SellingPoint.App.ViewModels"
+             x:Class="SellingPoint.App.Views.TouchKeyboardView"
+             x:DataType="vm:TouchKeyboardViewModel">
+
+  <UserControl.Styles>
+    <!--
+      Focusable="False" is the whole trick. Without it, tapping a key would move
+      focus off the text field being typed into, and the next key would have
+      nowhere to go.
+    -->
+    <Style Selector="Button.tecla-teclado">
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="Height" Value="62" />
+      <Setter Property="MinHeight" Value="62" />
+      <Setter Property="Margin" Value="4" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="FontSize" Value="20" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="CornerRadius" Value="8" />
+    </Style>
+  </UserControl.Styles>
+
+  <Border Background="{DynamicResource Surface1}" Padding="10,8"
+          BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0">
+    <ItemsControl ItemsSource="{Binding Rows}" HorizontalAlignment="Center">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate>
+          <ItemsControl ItemsSource="{Binding}" HorizontalAlignment="Center">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:KeyViewModel">
+                <Button Classes="tecla-teclado" Content="{Binding Label}"
+                        Width="{Binding Width}" Command="{Binding PressCommand}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </Border>
+</UserControl>

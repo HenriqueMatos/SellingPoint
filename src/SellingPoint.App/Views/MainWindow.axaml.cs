@@ -3,6 +3,8 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 
+using SellingPoint.App.ViewModels;
+
 namespace SellingPoint.App.Views;
 
 public partial class MainWindow : Window
@@ -31,12 +33,13 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// The machine at the event has no physical keyboard, so tapping a field has
-    /// to bring one up.
+    /// The machine at the event has no physical keyboard, so tapping a field
+    /// raises ours. Focus landing anywhere else puts it away again.
     /// </summary>
     private void OnGotFocus(object? sender, FocusChangedEventArgs e)
     {
-        if (e.Source is TextBox) TouchKeyboard.Show();
+        if (DataContext is MainWindowViewModel viewModel)
+            viewModel.Keyboard.Attach(e.Source as TextBox);
     }
 
     private void OnToggleFullScreen(object? sender, RoutedEventArgs e) => ToggleFullScreen();

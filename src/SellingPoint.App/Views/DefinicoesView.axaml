@@ -95,12 +95,12 @@
         <Grid ColumnDefinitions="*,*" Margin="0,14,0,0">
           <StackPanel Grid.Column="0" Margin="0,0,8,0">
             <TextBlock Text="Espaçamento entre linhas" Classes="label" Margin="0,0,0,4" />
-            <TextBox Text="{Binding LineSpacing}" />
+            <TextBox Text="{Binding LineSpacing}" Classes="numeric" />
             <TextBlock Classes="hint" Text="Pontos. 30 é o normal; 24 encolhe tudo um quinto." />
           </StackPanel>
           <StackPanel Grid.Column="1" Margin="8,0,0,0">
             <TextBlock Text="Avanço antes do corte" Classes="label" Margin="0,0,0,4" />
-            <TextBox Text="{Binding FeedLines}" />
+            <TextBox Text="{Binding FeedLines}" Classes="numeric" />
             <TextBlock Classes="hint" Text="Linhas. É o maior gasto fixo por talão." />
           </StackPanel>
         </Grid>
