@@ -1,8 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <AssemblyName>SellingPoint</AssemblyName>
+    <AssemblyName>SenhasDoCalvario</AssemblyName>
+    <Product>Senhas do Calvário</Product>
+    <Company>Mordomos Sr. do Calvário</Company>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- This is what gives the file its icon in Explorer and on the taskbar. The
+         window's own Icon is a separate thing and does not cover it. -->
+    <ApplicationIcon>Assets\senhas.ico</ApplicationIcon>
     <!-- Skia and HarfBuzz ship 100 MB of debug symbols alongside their native
          libraries; without this they land next to the executable. -->
     <AllowedReferenceRelatedFileExtensions>none</AllowedReferenceRelatedFileExtensions>
@@ -11,6 +16,10 @@
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
     <AvaloniaResource Include="Styles\**" />
+    <!-- The square crop the icon was cut from. Kept so senhas.ico can be
+         regenerated without hunting for the original logo; nothing loads it at
+         runtime, so it has no business being embedded in the executable. -->
+    <AvaloniaResource Remove="Assets\senhas-fonte.png" />
   </ItemGroup>
 
   <ItemGroup>

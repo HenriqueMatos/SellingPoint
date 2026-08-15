@@ -33,7 +33,9 @@ public sealed class WindowsRawTransport(string printerName) : IPrintTransport
         var buffer = IntPtr.Zero;
         try
         {
-            var document = new DocInfo { DocName = "SellingPoint", DataType = "RAW" };
+            // What the operator sees in the Windows print queue when a slip is
+            // spooling, so it says which program put it there.
+            var document = new DocInfo { DocName = "Senhas do Calvário", DataType = "RAW" };
 
             if (!StartDocPrinter(printer, 1, ref document)) throw Failure("StartDocPrinter falhou");
             if (!StartPagePrinter(printer)) throw Failure("StartPagePrinter falhou");

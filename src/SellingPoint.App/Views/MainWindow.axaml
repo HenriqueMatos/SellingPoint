@@ -4,8 +4,8 @@
         xmlns:views="using:SellingPoint.App.Views"
         x:Class="SellingPoint.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
-        Title="SellingPoint"
+        Icon="/Assets/senhas.ico"
+        Title="Senhas do Calvário"
         MinWidth="1024" MinHeight="600"
         WindowState="FullScreen">
 

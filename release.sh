@@ -50,7 +50,7 @@ dotnet publish src/SellingPoint.App -c Release -r win-x64 --self-contained \
   -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
   -p:EnableCompressionInSingleFile=true -o publish/win-x64 --nologo | tail -2
 
-test -f publish/win-x64/SellingPoint.exe
+test -f publish/win-x64/SenhasDoCalvario.exe
 
 echo "==> Commit e etiqueta"
 git add Directory.Build.props
@@ -66,7 +66,7 @@ git push --quiet
 git push --quiet origin "v$VERSION"
 
 echo "==> Publicar no GitHub"
-gh release create "v$VERSION" publish/win-x64/SellingPoint.exe \
+gh release create "v$VERSION" publish/win-x64/SenhasDoCalvario.exe \
   --title "v$VERSION" \
   --notes "${NOTES:-Sem notas.}"
 

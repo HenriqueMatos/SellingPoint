@@ -1,4 +1,4 @@
-# SellingPoint
+# Senhas do Calvário
 
 A till for village festivals, association parties and school events. Big-button
 touch screen, your own categories and prices, and slips printed on a cheap
@@ -30,9 +30,11 @@ Windows program, single file, no installer. Runs offline on one laptop.
 
 ## Running it
 
-**On Windows** — copy `SellingPoint.exe` onto the machine and double-click it.
-No .NET install, no admin rights, nothing else to copy. Data lives in
-`%APPDATA%\SellingPoint\`.
+**On Windows** — copy `SenhasDoCalvario.exe` onto the machine and double-click
+it. No .NET install, no admin rights, nothing else to copy. Data lives in
+`%APPDATA%\SellingPoint\` — the old name, kept deliberately so that renaming the
+program does not orphan the products, prices and sales history of everyone
+already using it.
 
 **From source** — needs the .NET 10 SDK:
 
