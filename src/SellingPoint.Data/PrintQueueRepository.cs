@@ -26,15 +26,29 @@ public sealed class PrintJob
 /// </summary>
 public sealed class PrintQueueRepository(Db db)
 {
-    public int Enqueue(PrintJob job)
+    private const string InsertSql =
+        """
+        INSERT INTO print_job(sale_id, title, payload, preview, created_at)
+        VALUES(@SaleId, @Title, @Payload, @Preview, @CreatedAt);
+        SELECT last_insert_rowid();
+        """;
+
+    /// <summary>
+    /// Every slip of one sale, in a single transaction. They used to be committed
+    /// one at a time, and on the till's own thread: an order that prints three
+    /// slips meant three separate commits between the customer paying and the
+    /// screen coming back. The order they go in is the order they come out.
+    /// </summary>
+    public void Enqueue(IReadOnlyList<PrintJob> jobs)
     {
+        if (jobs.Count == 0) return;
+
         using var c = db.Open();
-        return job.Id = c.ExecuteScalar<int>(
-            """
-            INSERT INTO print_job(sale_id, title, payload, preview, created_at)
-            VALUES(@SaleId, @Title, @Payload, @Preview, @CreatedAt);
-            SELECT last_insert_rowid();
-            """, job);
+        using var tx = c.BeginTransaction();
+
+        foreach (var job in jobs) job.Id = c.ExecuteScalar<int>(InsertSql, job, tx);
+
+        tx.Commit();
     }
 
     /// <summary>Oldest first, so a queue that drains prints in the order it was rung up.</summary>

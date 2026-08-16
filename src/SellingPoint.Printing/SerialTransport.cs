@@ -19,10 +19,27 @@ public sealed class SerialTransport(string portName, int baudRate = 9600) : IPri
     {
         using var port = Open();
         port.Write(data, 0, data.Length);
+        WaitForTheWireToEmpty(port);
+    }
 
-        // Closing the port drops DTR immediately; without this the tail of a long
-        // ticket can be cut off mid-line.
-        Thread.Sleep(200);
+    /// <summary>
+    /// Closing the port drops DTR at once, and anything still on its way out is
+    /// lost with it - the tail of a ticket cut off mid-line.
+    ///
+    /// Write returns when the bytes reach the operating system's buffer, not when
+    /// they have left down the wire. At 9600 baud a kilobyte takes a full second
+    /// to transmit, so the flat 200 ms wait this replaces was both slower than it
+    /// needed to be on short tickets and not long enough on long ones.
+    /// </summary>
+    private static void WaitForTheWireToEmpty(SerialPort port)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+
+        while (port.BytesToWrite > 0 && DateTime.UtcNow < deadline) Thread.Sleep(5);
+
+        // The last byte is in the transmit register rather than the buffer, and
+        // there is no way to ask about that one.
+        Thread.Sleep(20);
     }
 
     public byte[]? Exchange(byte[] request, int expectedBytes, int timeoutMs)

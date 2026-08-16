@@ -35,6 +35,17 @@ public sealed class Db(string path)
     public void Initialize(bool seedIfEmpty = true)
     {
         using var connection = Open();
+
+        // Write-ahead logging, set once and then remembered in the file itself.
+        // The default creates a journal file, syncs it, writes, syncs again and
+        // deletes the journal - for every transaction. On Windows, creating and
+        // deleting files is also exactly what the virus scanner watches.
+        //
+        // synchronous stays at its FULL default on purpose. NORMAL would be
+        // faster still, but it can lose the last transactions to a power cut, and
+        // these are sales. A festival runs off extension leads.
+        connection.Execute("PRAGMA journal_mode = WAL;");
+
         connection.Execute(ReadSchema());
 
         if (seedIfEmpty && connection.ExecuteScalar<long>("SELECT COUNT(*) FROM category") == 0)

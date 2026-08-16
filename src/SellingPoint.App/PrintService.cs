@@ -57,23 +57,14 @@ public sealed class PrintService : IDisposable
     public int Enqueue(Sale sale)
     {
         var composed = _printer.Compose(sale);
-        foreach (var slip in composed) Enqueue(slip, sale.Id);
-
-        Wake();
+        Enqueue(composed, sale.Id);
         return composed.Count;
     }
 
     public void EnqueueText(string title, IEnumerable<string> body)
-    {
-        Enqueue(_printer.ComposeText(title, body), saleId: null);
-        Wake();
-    }
+        => Enqueue([_printer.ComposeText(title, body)], saleId: null);
 
-    public void EnqueueTest()
-    {
-        Enqueue(_printer.ComposeTest(), saleId: null);
-        Wake();
-    }
+    public void EnqueueTest() => Enqueue([_printer.ComposeTest()], saleId: null);
 
     public void Pause()
     {
@@ -126,20 +117,31 @@ public sealed class PrintService : IDisposable
         return moved;
     }
 
-    private void Enqueue(ComposedSlip slip, int? saleId)
+    private void Enqueue(IReadOnlyList<ComposedSlip> slips, int? saleId)
     {
-        _queue.Enqueue(new PrintJob
+        var now = DateTime.Now;
+
+        _queue.Enqueue(slips.Select(slip => new PrintJob
         {
             SaleId = saleId,
             Title = slip.Title,
             Payload = slip.Payload,
             Preview = slip.Preview,
-            CreatedAt = DateTime.Now
-        });
+            CreatedAt = now
+        }).ToList());
 
-        // Updated here rather than left to the worker's next tick: the till reads
-        // this the instant a sale completes, to say how many slips are waiting.
+        // Read once for the whole sale rather than once per slip. Updated here
+        // rather than left to the worker's next tick: the till reads this the
+        // instant a sale completes, to say how many slips are waiting.
         PendingCount = _queue.PendingCount();
+
+        // A ticket that has just been rung up is tried now. Without this it serves
+        // out whatever backoff an earlier failure left behind - up to thirty
+        // seconds of nothing happening, with a printer that may already be fine
+        // again. The failure count is deliberately left alone: it is what makes
+        // TryRelocate fire every third failure, and clearing it would blind that.
+        _nextAttempt = DateTime.MinValue;
+        Wake();
     }
 
     private async Task LoopAsync(CancellationToken token)

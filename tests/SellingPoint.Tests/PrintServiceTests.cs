@@ -60,6 +60,40 @@ public class PrintServiceTests
         => new(t.PrintQueue, t.Settings, new TicketPrinter(transport, new TicketOptions()));
 
     [Fact]
+    public async Task A_new_sale_does_not_serve_the_sentence_of_an_earlier_failure()
+    {
+        // The complaint this exists for: "sometimes the printer takes longer to
+        // start". A run of failures pushes the retry out to thirty seconds, and
+        // that delay used to be inherited by work queued afterwards - so one
+        // hiccup earlier in the night left every later ticket waiting half a
+        // minute, in silence, with the printer already fine.
+        using var t = new TempDb();
+        var transport = new FlakyTransport { IsConnected = false };
+        using var service = Build(t, transport);
+        service.Start();
+
+        service.EnqueueText("FALHA", ["nunca vai sair"]);
+
+        // Four failures in a row is the longest backoff there is.
+        for (var attempt = 1; attempt <= 4; attempt++)
+        {
+            service.RetryNow();
+            await WaitUntil(() => service.Pending().FirstOrDefault()?.Attempts >= attempt,
+                $"failure {attempt} to be recorded");
+        }
+
+        service.DiscardPending();
+        transport.IsConnected = true;
+
+        // A ticket rung up now. Nothing has cleared the backoff but this.
+        service.EnqueueText("VENDA NOVA", ["tem de sair já"]);
+
+        // Waiting out thirty seconds overruns the budget, which is the failure.
+        await WaitUntil(() => transport.Sent.Count == 1, "the new slip to print without waiting");
+        Assert.Contains("tem de sair já", transport.Sent[0]);
+    }
+
+    [Fact]
     public async Task A_slip_queued_while_the_printer_is_down_comes_out_when_it_is_back()
     {
         using var t = new TempDb();
