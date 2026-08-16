@@ -125,6 +125,29 @@ public class SlipRendererTests
     }
 
     [Fact]
+    public void The_header_tops_every_slip_and_the_footer_only_closes_the_lists()
+    {
+        // Not a detail: Definições states this in as many words, and it used to
+        // state the opposite - that both lines came out on every ticket of the
+        // night - which is what made a group slip look like a different animal
+        // from the senhas beside it.
+        //
+        // The footer stays off senhas on purpose. They are the most numerous slip
+        // of the night by far, so a line on each is where paper actually goes, and
+        // they are the ones the bar collects and throws away rather than the one
+        // anybody keeps.
+        var options = Options();
+        var senha = RenderText(new SenhaSlip("Bar", "#0042-1", Now, "Cerveja", 150), options);
+        var group = RenderText(BarSlip(), options);
+
+        Assert.Contains(group, l => l.Contains("FESTA DA ALDEIA"));
+        Assert.Contains(senha, l => l.Contains("FESTA DA ALDEIA"));
+
+        Assert.Contains(group, l => l.Contains("Obrigado!"));
+        Assert.DoesNotContain(senha, l => l.Contains("Obrigado!"));
+    }
+
+    [Fact]
     public void An_empty_header_leaves_no_blank_line_at_the_top()
     {
         var lines = RenderText(BarSlip(), Options() with { Header = "" });

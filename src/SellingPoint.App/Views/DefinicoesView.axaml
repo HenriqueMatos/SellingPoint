@@ -61,7 +61,7 @@
         <TextBlock Text="Tamanho da letra" Classes="label" />
         <ComboBox ItemsSource="{Binding FontSizes}" SelectedItem="{Binding FontSize}" />
         <TextBlock Text="{Binding FormatText}" Classes="hint" Margin="0,6,0,0" />
-        <TextBlock Classes="hint"
+        <TextBlock Classes="hint" Margin="0,6,0,0"
                    Text="Numa impressora térmica o tamanho da letra e os caracteres por linha são a mesma coisa: letra maior, menos texto por linha. O número de colunas é calculado, para não poder ficar em desacordo com a letra." />
 
         <Border Background="#33D97706" CornerRadius="8" Padding="12" Margin="0,10,0,0"
@@ -84,12 +84,13 @@
 
         <TextBlock Text="Cabeçalho" Classes="label" />
         <TextBox Text="{Binding Header}" PlaceholderText="FESTA DA ALDEIA 2026" FontSize="15" />
+        <TextBlock Text="Sai no topo de todos os talões, senhas incluídas. Vazio esconde a linha."
+                   Classes="hint" TextWrapping="Wrap" Margin="0,6,0,0" />
 
         <TextBlock Text="Rodapé" Classes="label" />
         <TextBox Text="{Binding Footer}" PlaceholderText="Obrigado!" FontSize="15" />
-
-        <TextBlock Text="Vazio esconde a linha. Cada linha destas sai em todos os talões da noite."
-                   Classes="hint" Margin="0,6,0,0" />
+        <TextBlock Text="Só nas listas de grupo e no talão-resumo — nas senhas não, que numa noite são muitas e é aí que uma linha custa papel. Vazio esconde a linha."
+                   Classes="hint" TextWrapping="Wrap" Margin="0,6,0,0" />
 
         <CheckBox IsChecked="{Binding ShowPriceOnSenha}" Margin="0,14,0,0"
                   Content="Mostrar o preço nas senhas" />
