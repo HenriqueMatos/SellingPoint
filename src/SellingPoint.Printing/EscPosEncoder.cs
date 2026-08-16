@@ -81,21 +81,13 @@ public static class EscPosEncoder
 
     /// <summary>
     /// GS ! packs the width multiplier into the high nibble and the height into the
-    /// low one.
-    ///
-    /// The base size and the line's own emphasis are combined by taking the larger,
-    /// never by multiplying. A senha already doubles its product name; at the large
-    /// base size, multiplying would give quadruple-width letters and a line four
-    /// times too long for the paper - which is the overflow this whole change
-    /// exists to prevent.
+    /// low one. The multipliers themselves come from <see cref="PaperFormat"/>,
+    /// which is also where the preview panel and the paper estimate read them, so
+    /// the three cannot drift apart.
     /// </summary>
     private static byte Size(SlipStyle style, TicketFontSize font)
-    {
-        var width = Math.Max(PaperFormat.WidthMultiplier(font), style.HasFlag(SlipStyle.DoubleWidth) ? 2 : 1);
-        var height = Math.Max(PaperFormat.HeightMultiplier(font), style.HasFlag(SlipStyle.DoubleHeight) ? 2 : 1);
-
-        return (byte)(((width - 1) << 4) | (height - 1));
-    }
+        => (byte)(((PaperFormat.EffectiveWidth(style, font) - 1) << 4)
+                  | (PaperFormat.EffectiveHeight(style, font) - 1));
 
     private static byte Alignment(SlipAlign align) => align switch
     {

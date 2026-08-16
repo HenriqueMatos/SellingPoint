@@ -8,22 +8,24 @@ namespace SellingPoint.Printing;
 /// </summary>
 public static class SlipPreview
 {
-    public static string ToText(IEnumerable<SlipTextLine> lines, int columns)
+    public static string ToText(IEnumerable<SlipTextLine> lines, TicketOptions options)
     {
         var text = new StringBuilder();
+        var columns = options.Columns;
 
         foreach (var line in lines)
         {
-            // Double-width glyphs cover twice the paper, so the printer lays them
-            // out against half the column count. Centring at full width here puts
-            // them in the same visual place.
-            var usable = line.Style.HasFlag(SlipStyle.DoubleWidth) ? columns / 2 : columns;
+            // How many characters this line has room for, asked of the same place
+            // the printer's own size command is built from. Working it out here
+            // instead is what used to draw product names at half their width at
+            // every doubled size.
+            var usable = PaperFormat.UsableColumns(options.Paper, options.FontSize, line.Style);
             var content = Layout.Truncate(line.Text, usable);
 
             text.AppendLine(line.Align switch
             {
-                SlipAlign.Center => Layout.Center(content, columns),
-                SlipAlign.Right => content.PadLeft(columns),
+                SlipAlign.Center => Layout.Center(content, usable),
+                SlipAlign.Right => content.PadLeft(usable),
                 _ => content
             });
         }
@@ -32,7 +34,7 @@ public static class SlipPreview
     }
 
     public static string ToText(Slip slip, TicketOptions options)
-        => ToText(SlipRenderer.Render(slip, options), options.Columns);
+        => ToText(SlipRenderer.Render(slip, options), options);
 
     /// <summary>All of a sale's slips, separated by a scissors line.</summary>
     public static string ToText(IEnumerable<Slip> slips, TicketOptions options)

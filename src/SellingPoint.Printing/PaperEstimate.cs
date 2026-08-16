@@ -48,8 +48,11 @@ public static class PaperEstimate
 
     private static PaperCost Measure(IReadOnlyList<SlipTextLine> lines, TicketOptions options)
     {
-        // A double-height line occupies two lines of paper.
-        var printed = lines.Sum(l => l.Style.HasFlag(SlipStyle.DoubleHeight) ? 2 : 1);
+        // A line twice as tall takes twice the paper, and it does not matter
+        // whether the height came from the line's own emphasis or from a base
+        // size that doubles everything. Counting only the former made the
+        // millimetres shown in Definições half of what the roll gave up.
+        var printed = lines.Sum(l => PaperFormat.EffectiveHeight(l.Style, options.FontSize));
         var total = printed + Math.Max(0, options.FeedLinesBeforeCut);
 
         var spacing = options.LineSpacingDots is > 0 and <= 255

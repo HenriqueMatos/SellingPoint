@@ -189,9 +189,29 @@
       <Grid RowDefinitions="Auto,Auto,*">
         <TextBlock Grid.Row="0" Text="Como vai sair" Classes="section" />
         <TextBlock Grid.Row="1" Text="{Binding FormatText}" Classes="hint" Margin="0,0,0,10" />
-        <ScrollViewer Grid.Row="2">
-          <TextBlock Text="{Binding TicketPreview}" FontFamily="Menlo,Consolas,monospace"
-                     FontSize="12" Foreground="#CBD5E1" />
+        <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Auto">
+          <!-- The paper itself: white, and as wide as the roll. 80 mm comes out
+               wider than 58 mm, so choosing the roll is something seen rather
+               than only counted.
+
+               Each line carries its own scale instead of one scale for the
+               panel, because the printer can double a line's height without its
+               width - the price on a senha does exactly that - and a single
+               scale cannot show it. -->
+          <Border Background="#F8FAFC" CornerRadius="3" Padding="8,12" Margin="0,0,0,8"
+                  HorizontalAlignment="Left" VerticalAlignment="Top" Width="{Binding PaperPixels}">
+            <ItemsControl ItemsSource="{Binding PreviewLines}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:PreviewLine">
+                  <LayoutTransformControl LayoutTransform="{Binding Scale}"
+                                          HorizontalAlignment="{Binding Align}">
+                    <TextBlock Text="{Binding Text}" FontFamily="Menlo,Consolas,monospace"
+                               FontSize="10" FontWeight="{Binding Weight}" Foreground="#0F172A" />
+                  </LayoutTransformControl>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Border>
         </ScrollViewer>
       </Grid>
     </Border>

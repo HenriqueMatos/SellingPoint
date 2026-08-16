@@ -30,7 +30,7 @@ public sealed class TicketPrinter(IPrintTransport transport, TicketOptions optio
             composed.Add(new ComposedSlip(
                 Describe(slips[i]),
                 EscPosEncoder.Encode(lines, Options, drawer),
-                SlipPreview.ToText(lines, Options.Columns)));
+                SlipPreview.ToText(lines, Options)));
         }
 
         return composed;
@@ -52,7 +52,7 @@ public sealed class TicketPrinter(IPrintTransport transport, TicketOptions optio
         lines.Add(new SlipTextLine(Layout.Rule('=', Options.Columns)));
 
         return new ComposedSlip(title, EscPosEncoder.Encode(lines, Options),
-            SlipPreview.ToText(lines, Options.Columns));
+            SlipPreview.ToText(lines, Options));
     }
 
     public void Send(ComposedSlip slip) => Transport.Send(slip.Payload, slip.Preview);

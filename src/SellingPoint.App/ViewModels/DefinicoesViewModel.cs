@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using Avalonia.Layout;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SellingPoint.Core;
@@ -10,6 +12,36 @@ namespace SellingPoint.App.ViewModels;
 public sealed record Choice<T>(string Label, T Value)
 {
     public override string ToString() => Label;
+}
+
+/// <summary>
+/// One line of the preview panel, carrying the shape the printer will give it
+/// rather than only its text: bold, and how much wider and taller than an ordinary
+/// line it comes out. Drawn with those, the panel is the slip rather than a
+/// description of it.
+/// </summary>
+public sealed record PreviewLine(
+    string Text, bool IsBold, double ScaleX, double ScaleY, HorizontalAlignment Align)
+{
+    public FontWeight Weight => IsBold ? FontWeight.Bold : FontWeight.Normal;
+
+    public ITransform Scale => new ScaleTransform(ScaleX, ScaleY);
+
+    public static PreviewLine From(SlipTextLine line, TicketOptions options)
+    {
+        var (width, height) = PaperFormat.SizeRelativeToNormal(line.Style, options.FontSize);
+
+        return new PreviewLine(
+            Layout.Truncate(line.Text, PaperFormat.UsableColumns(options.Paper, options.FontSize, line.Style)),
+            line.Style.HasFlag(SlipStyle.Bold),
+            width, height,
+            line.Align switch
+            {
+                SlipAlign.Center => HorizontalAlignment.Center,
+                SlipAlign.Right => HorizontalAlignment.Right,
+                _ => HorizontalAlignment.Left
+            });
+    }
 }
 
 public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
@@ -30,11 +62,16 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
 
     // The column count is not offered: it follows from these two, because on a
     // thermal printer the letter size and the characters per line are one thing.
+    // Listed smallest letters first, which is not the order the enum declares -
+    // the two later sizes were added to members that already had names people's
+    // settings are stored under.
     public ObservableCollection<Choice<TicketFontSize>> FontSizes { get; } =
     [
         new("Pequena — cabe mais texto", TicketFontSize.Small),
         new("Normal", TicketFontSize.Normal),
-        new("Grande — metade dos caracteres por linha", TicketFontSize.Large)
+        new("Média — entre a normal e a grande", TicketFontSize.Medium),
+        new("Grande — metade dos caracteres por linha", TicketFontSize.Large),
+        new("Muito grande — para quem vê mal", TicketFontSize.Huge)
     ];
 
     public ObservableCollection<Choice<int>> CodePages { get; } =
@@ -64,7 +101,27 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
     [ObservableProperty] public partial Choice<PaperWidth>? Paper { get; set; }
     [ObservableProperty] public partial Choice<TicketFontSize>? FontSize { get; set; }
     [ObservableProperty] public partial string FormatText { get; set; } = "";
-    [ObservableProperty] public partial string TicketPreview { get; set; } = "";
+    public ObservableCollection<PreviewLine> PreviewLines { get; } = [];
+
+    /// <summary>
+    /// Pixels to one of the printer's dots.
+    ///
+    /// A monospace glyph advances about 0.6 of its font size, the preview draws at
+    /// font size 10, and font A is 12 dots wide - so one character is 6 px and one
+    /// dot is half of one. Tied to the FontSize in DefinicoesView.axaml: change
+    /// that and the paper stops meeting the text at its edge.
+    /// </summary>
+    private const double PixelsPerDot = 0.5;
+
+    /// <summary>The white border around the paper, both sides.</summary>
+    private const double PaperPadding = 16;
+
+    /// <summary>
+    /// How wide to draw the paper, so 58 mm looks narrower than 80 mm rather than
+    /// only fitting fewer characters.
+    /// </summary>
+    [ObservableProperty] public partial double PaperPixels { get; set; } =
+        PaperFormat.PrintableDots(PaperWidth.Wide) * PixelsPerDot + PaperPadding;
     [ObservableProperty] public partial bool NamesGetCut { get; set; }
     [ObservableProperty] public partial string CutExample { get; set; } = "";
     [ObservableProperty] public partial Choice<int>? CodePage { get; set; }
@@ -211,8 +268,23 @@ public partial class DefinicoesViewModel(AppServices services) : ViewModelBase
             ]
         };
 
-        var slips = TicketBuilder.Build(sale, options);
-        TicketPreview = SlipPreview.ToText(slips, options);
+        PaperPixels = PaperFormat.PrintableDots(options.Paper) * PixelsPerDot + PaperPadding;
+
+        PreviewLines.Clear();
+        var separator = new SlipTextLine(
+            new string('-', PaperFormat.Columns(options.Paper, TicketFontSize.Small)), SlipAlign.Center);
+
+        foreach (var slip in TicketBuilder.Build(sale, options))
+        {
+            // The scissors line between two slips is not printed; it is where the
+            // cutter goes, and it is drawn at the smallest size so it never claims
+            // paper the slip does not spend.
+            if (PreviewLines.Count > 0)
+                PreviewLines.Add(PreviewLine.From(separator, options with { FontSize = TicketFontSize.Small }));
+
+            foreach (var line in SlipRenderer.Render(slip, options))
+                PreviewLines.Add(PreviewLine.From(line, options));
+        }
 
         // Warn only when a name is genuinely losing letters, not merely because
         // the line is full.

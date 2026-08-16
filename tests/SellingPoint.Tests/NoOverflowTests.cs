@@ -27,7 +27,7 @@ public class NoOverflowTests
     private static IEnumerable<TicketOptions> AllCombinations()
     {
         foreach (var paper in new[] { PaperWidth.Wide, PaperWidth.Narrow })
-        foreach (var font in new[] { TicketFontSize.Small, TicketFontSize.Normal, TicketFontSize.Large })
+        foreach (var font in PaperFormat.InSizeOrder)
         foreach (var rules in new[] { true, false })
         foreach (var date in new[] { true, false })
         foreach (var total in new[] { true, false })
@@ -86,17 +86,21 @@ public class NoOverflowTests
             checkedCombinations++;
         }
 
-        // 2 papers x 3 sizes x 2^4 switches x 2 headers.
-        Assert.Equal(192, checkedCombinations);
+        // 2 papers x 5 sizes x 2^4 switches x 2 headers.
+        Assert.Equal(320, checkedCombinations);
     }
 
     [Theory]
     [InlineData(PaperWidth.Wide, TicketFontSize.Small, 64)]
     [InlineData(PaperWidth.Wide, TicketFontSize.Normal, 48)]
+    [InlineData(PaperWidth.Wide, TicketFontSize.Medium, 32)]
     [InlineData(PaperWidth.Wide, TicketFontSize.Large, 24)]
+    [InlineData(PaperWidth.Wide, TicketFontSize.Huge, 16)]
     [InlineData(PaperWidth.Narrow, TicketFontSize.Small, 42)]
     [InlineData(PaperWidth.Narrow, TicketFontSize.Normal, 32)]
+    [InlineData(PaperWidth.Narrow, TicketFontSize.Medium, 21)]
     [InlineData(PaperWidth.Narrow, TicketFontSize.Large, 16)]
+    [InlineData(PaperWidth.Narrow, TicketFontSize.Huge, 10)]
     public void Bigger_letters_mean_fewer_of_them(PaperWidth paper, TicketFontSize font, int columns)
         => Assert.Equal(columns, PaperFormat.Columns(paper, font));
 
