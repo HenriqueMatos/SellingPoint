@@ -29,7 +29,7 @@
                   <DataTemplate x:DataType="vm:CategoryRowViewModel">
                     <StackPanel Margin="0,4">
                       <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="15" LineHeight="26" />
-                      <TextBlock Text="{Binding Detail}" FontSize="11" Opacity="0.6" />
+                      <TextBlock Text="{Binding Detail}" FontSize="{DynamicResource TextSmall}" Foreground="{DynamicResource InkMuted}" />
                     </StackPanel>
                   </DataTemplate>
                 </ListBox.ItemTemplate>
@@ -60,12 +60,12 @@
                           HorizontalAlignment="Stretch" FontSize="16" />
                 <TextBox Text="{Binding CategoryPrintGroup}" Margin="0,6,0,0" FontSize="16"
                          PlaceholderText="ou escreva um grupo novo" />
-                <TextBlock TextWrapping="Wrap" FontSize="12" Opacity="0.6" Margin="0,6,0,0"
+                <TextBlock TextWrapping="Wrap" FontSize="{DynamicResource TextSmall}" Foreground="{DynamicResource InkMuted}" Margin="0,6,0,0"
                            Text="Cada categoria sai no seu próprio talão. Para juntar duas categorias no mesmo talão, dê-lhes o mesmo grupo." />
 
                 <CheckBox IsChecked="{Binding CategoryPerUnit}" Margin="0,14,0,0"
                           Content="Uma senha por unidade" />
-                <TextBlock TextWrapping="Wrap" FontSize="12" Opacity="0.6"
+                <TextBlock TextWrapping="Wrap" FontSize="{DynamicResource TextSmall}" Foreground="{DynamicResource InkMuted}"
                            Text="Ligado: 3 cervejas imprimem 3 senhas. Desligado: sai uma linha &quot;3x Cerveja&quot; no talão do grupo." />
 
                 <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,26,0,0">
@@ -98,7 +98,7 @@
                   <Style Selector="ListBoxItem">
                     <Setter Property="Padding" Value="0" />
                     <Setter Property="Margin" Value="0,0,8,8" />
-                    <Setter Property="Opacity" Value="0.6" />
+                    <Setter Property="Opacity" Value="0.78" />
                   </Style>
                   <Style Selector="ListBoxItem:selected">
                     <Setter Property="Opacity" Value="1" />
@@ -109,7 +109,7 @@
                 </ListBox.Styles>
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="vm:ProductFilterViewModel">
-                    <Border Background="{Binding Background}" CornerRadius="8" Padding="14,9">
+                    <Border Background="{Binding Background}" CornerRadius="8" Padding="14,12">
                       <StackPanel Orientation="Horizontal" Spacing="8">
                         <TextBlock Text="{Binding Name}" Foreground="White" LineHeight="24"
                                    FontWeight="SemiBold" />
@@ -132,7 +132,7 @@
                     <Grid ColumnDefinitions="*,Auto" Margin="0,4" Opacity="{Binding Opacity}">
                       <StackPanel Grid.Column="0">
                         <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="15" LineHeight="26" />
-                        <TextBlock Text="{Binding Detail}" FontSize="11" Opacity="0.6" />
+                        <TextBlock Text="{Binding Detail}" FontSize="{DynamicResource TextSmall}" Foreground="{DynamicResource InkMuted}" />
                       </StackPanel>
                       <TextBlock Grid.Column="1" Text="{Binding PriceText}" FontSize="15"
                                  VerticalAlignment="Center" />

@@ -23,7 +23,7 @@
               <DataTemplate x:DataType="vm:SessionRowViewModel">
                 <StackPanel Margin="0,4">
                   <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="15" LineHeight="26" />
-                  <TextBlock Text="{Binding Detail}" FontSize="11" Opacity="0.6" />
+                  <TextBlock Text="{Binding Detail}" FontSize="{DynamicResource TextSmall}" Foreground="{DynamicResource InkMuted}" />
                 </StackPanel>
               </DataTemplate>
             </ListBox.ItemTemplate>
@@ -35,23 +35,28 @@
         <StackPanel>
 
           <!-- Money -->
+          <!-- Two rows of two rather than four across. On the 1024-wide screen this
+               has to run on, four equal columns leave about 150px each, and a good
+               night's total at 30px needs more than that - a TextBlock clips with
+               no ellipsis, so "1.234,56 EUR" would have been read as "1.234,5" at
+               cash-up and counted against. -->
           <Border Classes="panel cartao">
-            <Grid ColumnDefinitions="*,*,*,*">
-              <StackPanel Grid.Column="0">
-                <TextBlock Text="Vendas" Opacity="0.6" />
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
+              <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,12,10">
+                <TextBlock Text="Vendas" Foreground="{DynamicResource InkMuted}" />
                 <TextBlock Text="{Binding SalesCountText}" FontSize="30" FontWeight="Bold" />
               </StackPanel>
-              <StackPanel Grid.Column="1">
-                <TextBlock Text="Dinheiro" Opacity="0.6" />
+              <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,10">
+                <TextBlock Text="Total" Foreground="{DynamicResource InkMuted}" />
+                <TextBlock Text="{Binding TotalText}" FontSize="30" FontWeight="Bold" />
+              </StackPanel>
+              <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,12,0">
+                <TextBlock Text="Dinheiro" Foreground="{DynamicResource InkMuted}" />
                 <TextBlock Text="{Binding CashText}" FontSize="26" />
               </StackPanel>
-              <StackPanel Grid.Column="2">
-                <TextBlock Text="Cartão" Opacity="0.6" />
+              <StackPanel Grid.Row="1" Grid.Column="1">
+                <TextBlock Text="Cartão" Foreground="{DynamicResource InkMuted}" />
                 <TextBlock Text="{Binding CardText}" FontSize="26" />
-              </StackPanel>
-              <StackPanel Grid.Column="3">
-                <TextBlock Text="Total" Opacity="0.6" />
-                <TextBlock Text="{Binding TotalText}" FontSize="30" FontWeight="Bold" />
               </StackPanel>
             </Grid>
           </Border>
@@ -64,6 +69,22 @@
                 <TextBlock Grid.Column="0" Text="Fundo de caixa" />
                 <TextBlock Grid.Column="1" Text="{Binding FloatText}" />
               </Grid>
+              <!-- Every movement, not just their total: at two in the morning the
+                   question is not how much left the drawer but who carried it. -->
+              <ItemsControl ItemsSource="{Binding MovementLines}" IsVisible="{Binding HasMovements}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:AmountRowViewModel">
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                      <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="{Binding Name}" />
+                        <TextBlock Text="{Binding Detail}" Foreground="{DynamicResource InkMuted}" />
+                      </StackPanel>
+                      <TextBlock Grid.Column="1" Text="{Binding TotalText}" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
               <Grid ColumnDefinitions="*,Auto" Margin="0,2">
                 <TextBlock Grid.Column="0" Text="Dinheiro esperado na caixa" FontWeight="SemiBold" />
                 <TextBlock Grid.Column="1" Text="{Binding ExpectedCashText}" FontWeight="SemiBold" />
@@ -77,8 +98,25 @@
                 <TextBlock Grid.Column="1" Text="{Binding VarianceText}" FontWeight="Bold" />
               </Grid>
 
-              <StackPanel IsVisible="{Binding IsSessionOpen}" Margin="0,14,0,0" Spacing="6">
-                <TextBlock Text="Fechar a sessão — conte o dinheiro na caixa" Opacity="0.7" />
+              <!-- Sangria. Sits with the session open only: a closed session has
+                   been counted, and moving its cash afterwards would change a
+                   figure somebody already signed off on. -->
+              <StackPanel IsVisible="{Binding IsSessionOpen}" Margin="0,16,0,0" Spacing="6">
+                <TextBlock Text="Registar dinheiro retirado da caixa"
+                           Foreground="{DynamicResource InkMuted}" />
+                <Grid ColumnDefinitions="160,*,Auto">
+                  <TextBox Grid.Column="0" Text="{Binding WithdrawalEntry}" PlaceholderText="0,00"
+                           Classes="numeric" FontSize="16" />
+                  <TextBox Grid.Column="1" Text="{Binding WithdrawalReason}" Margin="8,0,0,0"
+                           PlaceholderText="Porquê — por exemplo, levado ao carro" FontSize="16" />
+                  <Button Grid.Column="2" Content="Registar saída" Margin="8,0,0,0"
+                          Command="{Binding RecordWithdrawalCommand}" />
+                </Grid>
+              </StackPanel>
+
+              <StackPanel IsVisible="{Binding IsSessionOpen}" Margin="0,20,0,0" Spacing="6">
+                <TextBlock Text="Fechar a sessão — conte o dinheiro na caixa"
+                           Foreground="{DynamicResource InkMuted}" />
                 <Grid ColumnDefinitions="200,Auto">
                   <TextBox Grid.Column="0" Text="{Binding CountedEntry}" PlaceholderText="0,00" Classes="numeric" FontSize="16" />
                   <!-- Not the primary green: that is Guardar everywhere else in the
@@ -102,7 +140,7 @@
                     <Grid ColumnDefinitions="*,60,90" Margin="0,3">
                       <StackPanel Grid.Column="0">
                         <TextBlock Text="{Binding Name}" LineHeight="26" />
-                        <TextBlock Text="{Binding Detail}" FontSize="11" Opacity="0.55" />
+                        <TextBlock Text="{Binding Detail}" FontSize="{DynamicResource TextSmall}" Foreground="{DynamicResource InkMuted}" />
                       </StackPanel>
                       <TextBlock Grid.Column="1" Text="{Binding UnitsText}" HorizontalAlignment="Right" />
                       <TextBlock Grid.Column="2" Text="{Binding TotalText}" HorizontalAlignment="Right"
@@ -138,9 +176,9 @@
             <StackPanel>
               <TextBlock Text="Stock" Classes="section" />
               <Grid ColumnDefinitions="*,80,80,80" Margin="0,0,0,4">
-                <TextBlock Grid.Column="1" Text="Vendido" FontSize="11" Opacity="0.6" HorizontalAlignment="Right" />
-                <TextBlock Grid.Column="2" Text="Reposto" FontSize="11" Opacity="0.6" HorizontalAlignment="Right" />
-                <TextBlock Grid.Column="3" Text="Em stock" FontSize="11" Opacity="0.6" HorizontalAlignment="Right" />
+                <TextBlock Grid.Column="1" Text="Vendido" FontSize="{DynamicResource TextSmall}" Foreground="{DynamicResource InkMuted}" HorizontalAlignment="Right" />
+                <TextBlock Grid.Column="2" Text="Reposto" FontSize="{DynamicResource TextSmall}" Foreground="{DynamicResource InkMuted}" HorizontalAlignment="Right" />
+                <TextBlock Grid.Column="3" Text="Em stock" FontSize="{DynamicResource TextSmall}" Foreground="{DynamicResource InkMuted}" HorizontalAlignment="Right" />
               </Grid>
               <ItemsControl ItemsSource="{Binding StockLines}">
                 <ItemsControl.ItemTemplate>

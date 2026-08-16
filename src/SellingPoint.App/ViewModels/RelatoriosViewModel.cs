@@ -69,6 +69,48 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
     /// <summary>Changing the amount aims the button at a different number.</summary>
     partial void OnCountedEntryChanged(string value) => CloseArmed = false;
 
+    // Sangria: cash carried out of the drawer mid-evening.
+    [ObservableProperty] public partial string WithdrawalEntry { get; set; } = "";
+    [ObservableProperty] public partial string WithdrawalReason { get; set; } = "";
+    [ObservableProperty] public partial string MovementsText { get; set; } = "";
+    [ObservableProperty] public partial bool HasMovements { get; set; }
+
+    public ObservableCollection<AmountRowViewModel> MovementLines { get; } = [];
+
+    /// <summary>
+    /// Records money leaving the drawer. Only while the session is open: a closed
+    /// session has already been counted, and moving its cash afterwards would
+    /// change a figure somebody has signed off.
+    /// </summary>
+    [RelayCommand]
+    private void RecordWithdrawal()
+    {
+        if (_report is null || !_report.Session.IsOpen)
+        {
+            StatusMessage = "Só se pode registar uma sangria com a sessão aberta.";
+            return;
+        }
+
+        if (!Money.TryParseEuros(WithdrawalEntry, out var cents) || cents <= 0)
+        {
+            StatusMessage = "Escreva quanto saiu da caixa, por exemplo 200,00.";
+            return;
+        }
+
+        services.Sales.RecordCashMovement(
+            _report.Session.Id, -cents, WithdrawalReason.Trim(), DateTime.Now);
+
+        var id = _report.Session.Id;
+        WithdrawalEntry = "";
+        WithdrawalReason = "";
+
+        Load();
+        SelectedSession = Sessions.FirstOrDefault(s => s.Session.Id == id);
+
+        StatusMessage = $"Registada a saída de {Money.Format(cents)}. "
+                        + "O dinheiro esperado na caixa já desconta isso.";
+    }
+
     public void Load()
     {
         var selectedId = SelectedSession?.Session.Id;
@@ -84,6 +126,7 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
         ProductLines.Clear();
         CategoryLines.Clear();
         StockLines.Clear();
+        MovementLines.Clear();
 
         HasReport = value is not null;
         if (value is null)
@@ -103,6 +146,15 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
         TotalText = Money.Format(report.TotalCents);
         FloatText = Money.Format(report.Session.OpeningFloatCents);
         ExpectedCashText = Money.Format(report.ExpectedCashCents);
+
+        HasMovements = report.CashMovements.Count > 0;
+        MovementsText = Money.Format(report.CashMovementCents);
+        foreach (var movement in report.CashMovements)
+        {
+            MovementLines.Add(new AmountRowViewModel(
+                string.IsNullOrWhiteSpace(movement.Reason) ? "Sangria" : movement.Reason,
+                movement.CreatedAt.ToString("dd/MM HH:mm"), 0, movement.Cents));
+        }
 
         HasVariance = report.Session.ClosingCountedCents is not null;
         CountedCashText = report.Session.ClosingCountedCents is { } counted ? Money.Format(counted) : "—";
@@ -198,9 +250,21 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
             Layout.LeftRight("Cartão", Money.Format(report.CardCents), width),
             Layout.LeftRight("TOTAL", Money.Format(report.TotalCents), width),
             Layout.Rule('-', width),
-            Layout.LeftRight("Fundo de caixa", Money.Format(report.Session.OpeningFloatCents), width),
-            Layout.LeftRight("Dinheiro esperado", Money.Format(report.ExpectedCashCents), width)
+            Layout.LeftRight("Fundo de caixa", Money.Format(report.Session.OpeningFloatCents), width)
         };
+
+        // Listed one by one, not just totalled: at two in the morning the question
+        // is not how much left the drawer but who carried it and when.
+        foreach (var movement in report.CashMovements)
+        {
+            var label = string.IsNullOrWhiteSpace(movement.Reason)
+                ? $"{movement.CreatedAt:HH:mm} sangria"
+                : $"{movement.CreatedAt:HH:mm} {movement.Reason}";
+
+            lines.Add(Layout.LeftRight(label, Money.Format(movement.Cents), width));
+        }
+
+        lines.Add(Layout.LeftRight("Dinheiro esperado", Money.Format(report.ExpectedCashCents), width));
 
         if (report.Session.ClosingCountedCents is { } counted)
         {

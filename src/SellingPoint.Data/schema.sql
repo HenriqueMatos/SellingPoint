@@ -93,4 +93,20 @@ CREATE TABLE IF NOT EXISTS print_job (
 );
 CREATE INDEX IF NOT EXISTS ix_print_job_pending ON print_job(printed_at, id);
 
+-- Cash that entered or left the drawer without a sale. Negative is money taken
+-- out - the run to the car at eleven with most of the night's takings.
+--
+-- Without somewhere to record it, that run destroys the one number that catches
+-- an error or a theft: expected cash against counted cash. The only way out was
+-- to close the session mid-evening and start another, which splits the night's
+-- report in two.
+CREATE TABLE IF NOT EXISTS cash_movement (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id INTEGER NOT NULL REFERENCES session(id),
+  cents      INTEGER NOT NULL,
+  reason     TEXT    NOT NULL DEFAULT '',
+  created_at TEXT    NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_cash_movement_session ON cash_movement(session_id);
+
 INSERT OR IGNORE INTO setting(key, value) VALUES ('schema_version', '1');

@@ -43,6 +43,22 @@ public class Session
     public bool IsOpen => ClosedAt is null;
 }
 
+/// <summary>
+/// Cash in or out of the drawer without a sale. Negative is money taken out - a
+/// sangria, the run to the car with the takings so they are not sitting in a
+/// cash box in a field.
+/// </summary>
+public class CashMovement
+{
+    public int Id { get; set; }
+    public int SessionId { get; set; }
+    public int Cents { get; set; }
+    public string Reason { get; set; } = "";
+    public DateTime CreatedAt { get; set; }
+
+    public bool IsWithdrawal => Cents < 0;
+}
+
 public class Sale
 {
     public int Id { get; set; }

@@ -153,6 +153,96 @@ public partial class VendaViewModel : ViewModelBase
     [RelayCommand]
     private void CashClear() => CashEntry = "";
 
+    // Looking up a slip somebody is holding. "The kitchen never served number 87"
+    // could not be answered at all before: reprint only ever reached the last
+    // sale, so the volunteer had to refuse someone who might be right or hand over
+    // food to someone who was not.
+    [ObservableProperty] public partial bool IsTicketSearchOpen { get; set; }
+    [ObservableProperty] public partial string TicketSearchEntry { get; set; } = "";
+    [ObservableProperty] public partial string TicketSearchResult { get; set; } = "";
+    [ObservableProperty] public partial bool HasFoundTicket { get; set; }
+
+    private Sale? _foundSale;
+
+    [RelayCommand]
+    private void OpenTicketSearch()
+    {
+        TicketSearchEntry = "";
+        TicketSearchResult = "";
+        HasFoundTicket = false;
+        _foundSale = null;
+        IsTicketSearchOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseTicketSearch() => IsTicketSearchOpen = false;
+
+    [RelayCommand]
+    private void TicketSearchDigit(string digit)
+        => TicketSearchEntry = (TicketSearchEntry + digit).TrimStart('0');
+
+    [RelayCommand]
+    private void TicketSearchClear()
+    {
+        TicketSearchEntry = "";
+        TicketSearchResult = "";
+        HasFoundTicket = false;
+        _foundSale = null;
+    }
+
+    [RelayCommand]
+    private void FindTicket()
+    {
+        HasFoundTicket = false;
+        _foundSale = null;
+
+        if (_session is null)
+        {
+            TicketSearchResult = "Abra uma sessão primeiro.";
+            return;
+        }
+
+        if (!int.TryParse(TicketSearchEntry, out var number) || number <= 0)
+        {
+            TicketSearchResult = "Escreva o número que está no talão, por exemplo 87.";
+            return;
+        }
+
+        // Only this session: ticket numbers restart at 1 with each one, so a
+        // number alone does not identify a sale across the whole database.
+        var sale = services.Sales.GetSaleByTicket(_session.Id, number);
+        if (sale is null)
+        {
+            TicketSearchResult = $"Não há nenhum talão {TicketBuilder.Reference(number)} nesta sessão.";
+            return;
+        }
+
+        _foundSale = sale;
+        HasFoundTicket = true;
+        TicketSearchResult = Describe(sale);
+    }
+
+    /// <summary>What was on the slip, in the order it was rung up.</summary>
+    private static string Describe(Sale sale)
+    {
+        var lines = sale.Lines.Select(l => $"{l.Qty}x {l.ProductName}   {Money.Format(l.LineTotalCents)}");
+        var method = sale.PaymentMethod == PaymentMethod.Cash ? "dinheiro" : "cartão";
+
+        return $"{TicketBuilder.Reference(sale.TicketNumber)} — {sale.CreatedAt:HH:mm}, {method}\n"
+               + string.Join('\n', lines)
+               + $"\nTOTAL   {Money.Format(sale.TotalCents)}";
+    }
+
+    [RelayCommand]
+    private void ReprintFound()
+    {
+        if (_foundSale is not { } sale) return;
+
+        var slips = services.Print.Enqueue(sale);
+        IsTicketSearchOpen = false;
+        StatusMessage = $"Talão {TicketBuilder.Reference(sale.TicketNumber)} reimpresso — {slips} senha(s).";
+    }
+
     [RelayCommand]
     private void ConfirmCash() => Complete(PaymentMethod.Cash, CashReceivedCents);
 

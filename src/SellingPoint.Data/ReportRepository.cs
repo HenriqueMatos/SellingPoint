@@ -39,10 +39,20 @@ public sealed record SessionReport
     public required IReadOnlyList<CategorySales> Categories { get; init; }
     public required IReadOnlyList<StockLine> Stock { get; init; }
 
+    /// <summary>Cash in or out of the drawer without a sale, oldest first.</summary>
+    public required IReadOnlyList<CashMovement> CashMovements { get; init; }
+
     public int TotalCents => CashCents + CardCents;
 
-    /// <summary>What should be in the box: the opening float plus every cash sale.</summary>
-    public int ExpectedCashCents => Session.OpeningFloatCents + CashCents;
+    /// <summary>Negative when more was taken out of the drawer than put in.</summary>
+    public int CashMovementCents => CashMovements.Sum(m => m.Cents);
+
+    /// <summary>
+    /// What should be in the box: the opening float, plus every cash sale, less
+    /// whatever was carried out of it during the night. Leave that last part out
+    /// and the count below is measured against a number nobody expects to match.
+    /// </summary>
+    public int ExpectedCashCents => Session.OpeningFloatCents + CashCents + CashMovementCents;
 
     /// <summary>Positive means more cash than expected, negative means short.</summary>
     public int? VarianceCents => Session.ClosingCountedCents - ExpectedCashCents;
@@ -100,6 +110,9 @@ public sealed class ReportRepository(Db db)
             ORDER BY p.sort_order, p.id
             """, new { id }).AsList();
 
+        var movements = c.Query<CashMovement>(
+            "SELECT * FROM cash_movement WHERE session_id = @id ORDER BY id", new { id }).AsList();
+
         return new SessionReport
         {
             Session = session,
@@ -108,7 +121,8 @@ public sealed class ReportRepository(Db db)
             CardCents = card,
             Products = products,
             Categories = categories,
-            Stock = stock
+            Stock = stock,
+            CashMovements = movements
         };
     }
 
@@ -128,6 +142,10 @@ public sealed class ReportRepository(Db db)
         csv.AppendLine($"Cartão;{Money.FormatPlain(report.CardCents)}");
         csv.AppendLine($"Total;{Money.FormatPlain(report.TotalCents)}");
         csv.AppendLine($"Fundo de caixa;{Money.FormatPlain(report.Session.OpeningFloatCents)}");
+
+        if (report.CashMovements.Count > 0)
+            csv.AppendLine($"Sangrias e reforços;{Money.FormatPlain(report.CashMovementCents)}");
+
         csv.AppendLine($"Dinheiro esperado;{Money.FormatPlain(report.ExpectedCashCents)}");
 
         if (report.Session.ClosingCountedCents is { } counted)
@@ -140,6 +158,16 @@ public sealed class ReportRepository(Db db)
         csv.AppendLine("Produto;Categoria;Unidades;Total");
         foreach (var p in report.Products)
             csv.AppendLine($"{Escape(p.Name)};{Escape(p.CategoryName)};{p.Units};{Money.FormatPlain(p.TotalCents)}");
+
+        if (report.CashMovements.Count > 0)
+        {
+            csv.AppendLine();
+            csv.AppendLine("Hora;Movimento;Valor");
+            foreach (var m in report.CashMovements)
+            {
+                csv.AppendLine($"{m.CreatedAt:dd/MM HH:mm};{Escape(m.Reason)};{Money.FormatPlain(m.Cents)}");
+            }
+        }
 
         csv.AppendLine();
         csv.AppendLine("Categoria;Unidades;Total");

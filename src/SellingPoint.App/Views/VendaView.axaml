@@ -213,13 +213,18 @@
             </Border>
 
             <StackPanel Grid.Row="3" Spacing="8">
-              <Grid ColumnDefinitions="*,*">
+              <Grid ColumnDefinitions="*,*,*">
                 <Button Grid.Column="0" Content="Limpar" Classes="quiet" HorizontalAlignment="Stretch"
-                        Height="{DynamicResource TapSmall}" Margin="0,0,4,0"
+                        Height="{DynamicResource TapSmall}" Margin="0,0,3,0"
                         Command="{Binding ClearCartCommand}" IsEnabled="{Binding !IsCartEmpty}" />
                 <Button Grid.Column="1" Content="Reimprimir" Classes="quiet" HorizontalAlignment="Stretch"
-                        Height="{DynamicResource TapSmall}" Margin="4,0,0,0"
+                        Height="{DynamicResource TapSmall}" Margin="3,0,3,0"
                         Command="{Binding ReprintLastCommand}" IsEnabled="{Binding CanReprint}" />
+                <!-- Someone holding a slip from an hour ago. Reprint only ever
+                     reached the last sale. -->
+                <Button Grid.Column="2" Content="Procurar" Classes="quiet" HorizontalAlignment="Stretch"
+                        Height="{DynamicResource TapSmall}" Margin="3,0,0,0"
+                        Command="{Binding OpenTicketSearchCommand}" IsEnabled="{Binding HasOpenSession}" />
               </Grid>
               <Grid ColumnDefinitions="*,*">
                 <Button Grid.Column="0" Classes="primary" HorizontalAlignment="Stretch"
@@ -333,6 +338,63 @@
                     HorizontalAlignment="Stretch" Margin="6,0,0,0"
                     FontSize="{DynamicResource TextLarge}"
                     Command="{Binding ConfirmCashCommand}" IsEnabled="{Binding CanConfirmCash}" />
+          </Grid>
+        </Grid>
+      </Border>
+      </ScrollViewer>
+    </Grid>
+
+    <!--
+      Looking up a slip a customer is holding. Same shape as the cash panel: the
+      numpad on the right, what it found on the left, so a thumb that knows one
+      knows the other.
+    -->
+    <Grid Background="#CC020617" IsVisible="{Binding IsTicketSearchOpen}">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <Border Classes="overlay-card" MinWidth="760" Margin="16">
+        <Grid ColumnDefinitions="*,Auto" RowDefinitions="*,Auto">
+
+          <StackPanel Grid.Row="0" Grid.Column="0" Spacing="14" MinWidth="330" Margin="0,0,24,0">
+            <TextBlock Text="Procurar talão" FontSize="{DynamicResource TextTitle}" FontWeight="Bold" />
+            <TextBlock Text="O número que está impresso no talão, sem o cardinal."
+                       Classes="hint" TextWrapping="Wrap" />
+
+            <Border Background="{DynamicResource Surface3}" CornerRadius="12" Padding="18,14">
+              <TextBlock Text="{Binding TicketSearchEntry}" FontSize="{DynamicResource TextDisplay}"
+                         FontWeight="Bold" HorizontalAlignment="Center" MinHeight="42" />
+            </Border>
+
+            <Border Background="{DynamicResource Surface2}" CornerRadius="12" Padding="16"
+                    IsVisible="{Binding TicketSearchResult, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <TextBlock Text="{Binding TicketSearchResult}" TextWrapping="Wrap"
+                         FontFamily="Menlo,Consolas,monospace" LineHeight="26"
+                         FontSize="{DynamicResource TextBody}" />
+            </Border>
+          </StackPanel>
+
+          <WrapPanel Grid.Row="0" Grid.Column="1" MaxWidth="354" VerticalAlignment="Top">
+            <Button Classes="tecla" Content="1" Command="{Binding TicketSearchDigitCommand}" CommandParameter="1" />
+            <Button Classes="tecla" Content="2" Command="{Binding TicketSearchDigitCommand}" CommandParameter="2" />
+            <Button Classes="tecla" Content="3" Command="{Binding TicketSearchDigitCommand}" CommandParameter="3" />
+            <Button Classes="tecla" Content="4" Command="{Binding TicketSearchDigitCommand}" CommandParameter="4" />
+            <Button Classes="tecla" Content="5" Command="{Binding TicketSearchDigitCommand}" CommandParameter="5" />
+            <Button Classes="tecla" Content="6" Command="{Binding TicketSearchDigitCommand}" CommandParameter="6" />
+            <Button Classes="tecla" Content="7" Command="{Binding TicketSearchDigitCommand}" CommandParameter="7" />
+            <Button Classes="tecla" Content="8" Command="{Binding TicketSearchDigitCommand}" CommandParameter="8" />
+            <Button Classes="tecla" Content="9" Command="{Binding TicketSearchDigitCommand}" CommandParameter="9" />
+            <Button Classes="tecla" Content="0" Command="{Binding TicketSearchDigitCommand}" CommandParameter="0" />
+            <Button Classes="tecla quiet" Content="C" Command="{Binding TicketSearchClearCommand}" />
+            <Button Classes="tecla primary" Content="🔍" Command="{Binding FindTicketCommand}" />
+          </WrapPanel>
+
+          <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" ColumnDefinitions="*,*" Margin="0,20,0,0">
+            <Button Grid.Column="0" Content="Fechar" Classes="quiet" Height="64"
+                    HorizontalAlignment="Stretch" Margin="0,0,6,0"
+                    Command="{Binding CloseTicketSearchCommand}" />
+            <Button Grid.Column="1" Content="Reimprimir este talão" Classes="primary" Height="64"
+                    HorizontalAlignment="Stretch" Margin="6,0,0,0"
+                    FontSize="{DynamicResource TextLarge}"
+                    Command="{Binding ReprintFoundCommand}" IsEnabled="{Binding HasFoundTicket}" />
           </Grid>
         </Grid>
       </Border>

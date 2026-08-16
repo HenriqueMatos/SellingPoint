@@ -36,6 +36,36 @@ public sealed class SalesRepository(Db db)
         return new Session { Id = id, Name = name, OpenedAt = now, OpeningFloatCents = openingFloatCents };
     }
 
+    /// <summary>
+    /// Records cash leaving or entering the drawer without a sale. Negative takes
+    /// money out. Kept as its own row rather than adjusting the opening float, so
+    /// the closing report can show what happened and when.
+    /// </summary>
+    public CashMovement RecordCashMovement(int sessionId, int cents, string reason, DateTime now)
+    {
+        using var c = db.Open();
+        var id = c.ExecuteScalar<int>(
+            """
+            INSERT INTO cash_movement(session_id, cents, reason, created_at)
+            VALUES(@sessionId, @cents, @reason, @now);
+            SELECT last_insert_rowid();
+            """,
+            new { sessionId, cents, reason, now });
+
+        return new CashMovement
+        {
+            Id = id, SessionId = sessionId, Cents = cents, Reason = reason, CreatedAt = now
+        };
+    }
+
+    public List<CashMovement> GetCashMovements(int sessionId)
+    {
+        using var c = db.Open();
+        return c.Query<CashMovement>(
+            "SELECT * FROM cash_movement WHERE session_id = @sessionId ORDER BY id",
+            new { sessionId }).AsList();
+    }
+
     public void CloseSession(int sessionId, int countedCents, DateTime now)
     {
         using var c = db.Open();
@@ -109,6 +139,22 @@ public sealed class SalesRepository(Db db)
         sale.Lines = c.Query<SaleLine>(
             "SELECT * FROM sale_line WHERE sale_id = @saleId ORDER BY id", new { saleId }).AsList();
         return sale;
+    }
+
+    /// <summary>
+    /// The sale a customer is holding the slip for. Reprint only ever reached the
+    /// last one, so a slip from an hour ago could not be looked at at all: the
+    /// volunteer either refused someone who was in the right or gave away food to
+    /// someone who was not.
+    /// </summary>
+    public Sale? GetSaleByTicket(int sessionId, int ticketNumber)
+    {
+        using var c = db.Open();
+        var id = c.ExecuteScalar<int?>(
+            "SELECT id FROM sale WHERE session_id = @sessionId AND ticket_number = @ticketNumber",
+            new { sessionId, ticketNumber });
+
+        return id is null ? null : GetSale(id.Value);
     }
 
     /// <summary>Backs the "reprint last ticket" button.</summary>
