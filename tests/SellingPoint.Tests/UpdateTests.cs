@@ -115,6 +115,64 @@ public class UpdateInstallerTests
         }
     }
 
+    /// <summary>Answers with whatever bytes the test wants, however wrong.</summary>
+    private sealed class Server(string body) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
+            => Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent(body)
+            });
+    }
+
+    private static ReleaseInfo Release(long sizeBytes)
+        => new(new Version(9, 9, 9), "notas", "https://example/SenhasDoCalvario.exe", sizeBytes);
+
+    [Fact]
+    public async Task A_download_that_does_not_weigh_what_it_should_is_thrown_away()
+    {
+        // The festival's wifi is a captive portal, or GitHub answers with an error
+        // page: either way the status is 200 and the body is HTML. Without this
+        // check those bytes become the program at the next launch, and the till
+        // does not start - discovered when someone opens up the following evening.
+        using var s = new Sandbox();
+        using var http = new HttpClient(new Server("<html>Ligue-se à rede primeiro</html>"));
+
+        await Assert.ThrowsAsync<IOException>(() => s.Installer.DownloadAsync(http, Release(52_428_800)));
+
+        Assert.False(s.Installer.HasPendingUpdate);
+        Assert.False(File.Exists(s.Installer.PendingPath + ".part"));
+    }
+
+    [Fact]
+    public async Task A_download_of_the_right_size_is_kept()
+    {
+        using var s = new Sandbox();
+        const string body = "o executável novo";
+        using var http = new HttpClient(new Server(body));
+
+        // Bytes, not characters: the accent costs two of them in UTF-8, and the
+        // size GitHub states is the size of the file.
+        await s.Installer.DownloadAsync(http, Release(System.Text.Encoding.UTF8.GetByteCount(body)));
+
+        Assert.True(s.Installer.HasPendingUpdate);
+        Assert.Equal(body, File.ReadAllText(s.Installer.PendingPath));
+    }
+
+    [Fact]
+    public async Task A_release_that_does_not_say_its_size_is_taken_on_trust()
+    {
+        // GitHub always sends it, but a release created by hand might not, and
+        // refusing every update over a missing number would be worse than the
+        // thing this guards against.
+        using var s = new Sandbox();
+        using var http = new HttpClient(new Server("seja o que for"));
+
+        await s.Installer.DownloadAsync(http, Release(0));
+
+        Assert.True(s.Installer.HasPendingUpdate);
+    }
+
     [Fact]
     public void With_nothing_downloaded_there_is_nothing_to_apply()
     {

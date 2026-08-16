@@ -38,9 +38,14 @@
                 Command="{Binding PrintTestCommand}" />
       </WrapPanel>
 
-      <StackPanel Orientation="Horizontal" Spacing="8">
-        <Button Content="Pausar / Retomar" Classes="quiet" Command="{Binding TogglePauseCommand}" />
-        <Button Content="Apagar fila" Classes="quiet" Command="{Binding DiscardQueueCommand}" />
+      <StackPanel Orientation="Horizontal" Spacing="24">
+        <Button Content="{Binding PauseLabel}" Classes="quiet" Command="{Binding TogglePauseCommand}" />
+        <!-- Every slip in the queue belongs to someone who has already paid, so
+             this asks on the first tap. Kept well clear of the pause button:
+             the two used to sit eight pixels apart wearing the same styling. -->
+        <Button Content="{Binding DiscardLabel}" Classes="danger-quiet"
+                Classes.armed="{Binding DiscardArmed}"
+                Command="{Binding DiscardQueueCommand}" />
       </StackPanel>
 
       <Border Background="#33FFAA00" CornerRadius="6" Padding="10" Margin="0,12,0,0"

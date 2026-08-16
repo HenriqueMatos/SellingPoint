@@ -126,6 +126,20 @@
     <Setter Property="Background" Value="#3B0D0D" />
   </Style>
 
+  <!-- A destructive button that has been tapped once and is now asking. Solid red
+       rather than outlined, so the difference between "this deletes things" and
+       "the next tap deletes them" is visible across a dark field and not only
+       readable up close. -->
+  <Style Selector="Button.armed">
+    <Setter Property="Background" Value="{DynamicResource Danger}" />
+    <Setter Property="BorderBrush" Value="#FCA5A5" />
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="Button.armed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Danger}" />
+  </Style>
+
   <Style Selector="Button.quiet">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderBrush" Value="{DynamicResource Line}" />

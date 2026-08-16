@@ -70,7 +70,10 @@
 
                 <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,26,0,0">
                   <Button Content="Guardar" Classes="primary" Width="140" Command="{Binding SaveCategoryCommand}" />
-                  <Button Content="Apagar" Classes="danger-quiet" Width="120"
+                  <!-- Asks on the first tap; the label is what says so, because the
+                       status line is at the far bottom of the screen. -->
+                  <Button Content="{Binding DeleteCategoryLabel}" Classes="danger-quiet" Width="160"
+                          Classes.armed="{Binding CategoryDeleteArmed}"
                           Command="{Binding DeleteCategoryCommand}" />
                 </StackPanel>
               </StackPanel>
@@ -174,7 +177,8 @@
 
                 <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,26,0,0">
                   <Button Content="Guardar" Classes="primary" Width="140" Command="{Binding SaveProductCommand}" />
-                  <Button Content="Apagar" Classes="danger-quiet" Width="120"
+                  <Button Content="{Binding DeleteProductLabel}" Classes="danger-quiet" Width="160"
+                          Classes.armed="{Binding ProductDeleteArmed}"
                           Command="{Binding DeleteProductCommand}" />
                 </StackPanel>
               </StackPanel>

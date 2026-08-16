@@ -60,6 +60,15 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
     [ObservableProperty] public partial bool IsSessionOpen { get; set; }
     [ObservableProperty] public partial string CountedEntry { get; set; } = "";
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CloseSessionLabel))]
+    public partial bool CloseArmed { get; set; }
+
+    public string CloseSessionLabel => CloseArmed ? "Confirmar o fecho" : "Fechar sessão";
+
+    /// <summary>Changing the amount aims the button at a different number.</summary>
+    partial void OnCountedEntryChanged(string value) => CloseArmed = false;
+
     public void Load()
     {
         var selectedId = SelectedSession?.Session.Id;
@@ -122,6 +131,19 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
             return;
         }
 
+        // There is no reopening a session - the repository has no such method, by
+        // design. This button used to wear the same green as the harmless Guardar
+        // on every other screen and sit a thumb's width from the box you type the
+        // count into, so it asks first, and says the number it is about to close on.
+        if (!CloseArmed)
+        {
+            CloseArmed = true;
+            StatusMessage = $"Fechar a sessão com {Money.Format(counted)} contados. "
+                            + "Não é possível reabrir. Toque outra vez para confirmar.";
+            return;
+        }
+
+        CloseArmed = false;
         services.Sales.CloseSession(_report.Session.Id, counted, DateTime.Now);
 
         // A closing session is the natural moment to take a copy of the night.

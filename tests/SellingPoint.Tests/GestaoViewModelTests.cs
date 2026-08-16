@@ -149,6 +149,8 @@ public class GestaoViewModelTests
         using var f = new Fixture();
         f.Vm.SelectedCategory = f.Vm.CategoryRows.Single(c => c.Name == "Comida");
 
+        // Twice: the first tap only asks. See DestructiveActionTests.
+        f.Vm.DeleteCategoryCommand.Execute(null);
         f.Vm.DeleteCategoryCommand.Execute(null);
 
         Assert.DoesNotContain(f.Vm.ProductFilters, x => x.Name == "Comida");

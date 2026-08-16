@@ -49,10 +49,31 @@ public partial class PrinterDiagnosticsViewModel : ViewModelBase
     [ObservableProperty] public partial string ConnectionText { get; set; } = "";
     [ObservableProperty] public partial string PendingText { get; set; } = "";
     [ObservableProperty] public partial string? LastError { get; set; }
-    [ObservableProperty] public partial bool IsPaused { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PauseLabel))]
+    public partial bool IsPaused { get; set; }
     [ObservableProperty] public partial bool IsScanning { get; set; }
     [ObservableProperty] public partial bool CanScanPorts { get; set; }
     [ObservableProperty] public partial string ScanResultText { get; set; } = "";
+
+    // Throwing the queue away is the most destructive thing on this screen: every
+    // slip in it belongs to somebody who has already paid. It sat eight pixels
+    // from "Pausar / Retomar" wearing the same quiet styling, so it asks first now.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DiscardLabel))]
+    public partial bool DiscardArmed { get; set; }
+
+    public string DiscardLabel => DiscardArmed ? "Apagar mesmo?" : "Apagar fila";
+
+    /// <summary>
+    /// Called when the panel opens. Deliberately not done in Refresh: the print
+    /// worker raises its change event every three seconds, so disarming there
+    /// would cancel the question before anyone could answer it.
+    /// </summary>
+    public void Disarm() => DiscardArmed = false;
+
+    /// <summary>What the pause button will do, rather than naming both options.</summary>
+    public string PauseLabel => IsPaused ? "Retomar impressão" : "Pausar impressão";
 
     public void Refresh()
     {
@@ -111,8 +132,26 @@ public partial class PrinterDiagnosticsViewModel : ViewModelBase
     [RelayCommand]
     private void DiscardQueue()
     {
+        var waiting = _services.Print.PendingCount;
+
+        if (waiting == 0)
+        {
+            ScanResultText = "A fila já está vazia.";
+            return;
+        }
+
+        if (!DiscardArmed)
+        {
+            DiscardArmed = true;
+            ScanResultText = $"Isto deita fora {waiting} talão(ões) de pessoas que já pagaram, "
+                             + "e não voltam. Toque outra vez para confirmar.";
+            return;
+        }
+
+        DiscardArmed = false;
         _services.Print.DiscardPending();
         Refresh();
+        ScanResultText = $"{waiting} talão(ões) apagados sem imprimir.";
     }
 
     /// <summary>

@@ -68,6 +68,20 @@ public partial class GestaoViewModel(AppServices services) : ViewModelBase
 
     [ObservableProperty] public partial string StatusMessage { get; set; } = "";
 
+    // Deleting asks first. The question is put on the button itself rather than in
+    // a dialog: on a touch screen a dialog is one more thing to hit, and the tap
+    // that dismisses it lands wherever the next thing happens to be.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DeleteCategoryLabel))]
+    public partial bool CategoryDeleteArmed { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DeleteProductLabel))]
+    public partial bool ProductDeleteArmed { get; set; }
+
+    public string DeleteCategoryLabel => CategoryDeleteArmed ? "Apagar mesmo?" : "Apagar";
+    public string DeleteProductLabel => ProductDeleteArmed ? "Apagar mesmo?" : "Apagar";
+
     /// <summary>Which category's products are on screen. Null only before the first load.</summary>
     [ObservableProperty] public partial ProductFilterViewModel? SelectedProductFilter { get; set; }
 
@@ -158,6 +172,10 @@ public partial class GestaoViewModel(AppServices services) : ViewModelBase
 
     partial void OnSelectedCategoryChanged(CategoryRowViewModel? value)
     {
+        // Moving to a different row cancels an armed delete: the button would
+        // otherwise still be aimed at whatever was selected a moment ago.
+        CategoryDeleteArmed = false;
+
         if (value is null) return;
 
         CategoryName = value.Category.Name;
@@ -168,6 +186,8 @@ public partial class GestaoViewModel(AppServices services) : ViewModelBase
 
     partial void OnSelectedProductChanged(ProductRowViewModel? value)
     {
+        ProductDeleteArmed = false;
+
         if (value is null) return;
 
         ProductName = value.Product.Name;
@@ -221,6 +241,20 @@ public partial class GestaoViewModel(AppServices services) : ViewModelBase
         if (SelectedCategory is not { } row) return;
 
         var count = _products.Count(p => p.CategoryId == row.Category.Id);
+
+        // Asked before, not reported after. Deleting a category takes every
+        // product in it with it, and until now the only place that said so was a
+        // status line that appeared once the products were already gone.
+        if (!CategoryDeleteArmed)
+        {
+            CategoryDeleteArmed = true;
+            StatusMessage = count > 0
+                ? $"Apagar «{row.Category.Name}» leva também os seus {count} produto(s). Toque outra vez para confirmar."
+                : $"Toque outra vez para apagar «{row.Category.Name}».";
+            return;
+        }
+
+        CategoryDeleteArmed = false;
         services.Catalog.DeleteCategory(row.Category.Id);
 
         SelectedCategory = null;
@@ -328,10 +362,25 @@ public partial class GestaoViewModel(AppServices services) : ViewModelBase
     {
         if (SelectedProduct is not { } row) return;
 
+        // The first tap names what is about to go. Deleting used to happen on one
+        // tap with only a status line at the far bottom of the screen to show for
+        // it - and since the list selects the next row straight afterwards, a
+        // second tap by someone who thought nothing had happened deleted an
+        // unrelated product.
+        if (!ProductDeleteArmed)
+        {
+            ProductDeleteArmed = true;
+            StatusMessage = $"Toque outra vez para apagar «{row.Product.Name}».";
+            return;
+        }
+
+        ProductDeleteArmed = false;
+        var name = row.Product.Name;
+
         services.Catalog.DeleteProduct(row.Product.Id);
         SelectedProduct = null;
         Load();
-        StatusMessage = "Produto apagado. As vendas antigas mantêm o nome e o preço que tinham.";
+        StatusMessage = $"«{name}» apagado. As vendas antigas mantêm o nome e o preço que tinham.";
     }
 
     [RelayCommand] private void MoveProductUp() => MoveProduct(-1);

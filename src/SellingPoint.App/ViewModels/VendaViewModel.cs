@@ -178,6 +178,7 @@ public partial class VendaViewModel : ViewModelBase
     [RelayCommand]
     private void OpenDiagnostics()
     {
+        Diagnostics.Disarm();
         Diagnostics.Refresh();
         IsDiagnosticsOpen = true;
     }

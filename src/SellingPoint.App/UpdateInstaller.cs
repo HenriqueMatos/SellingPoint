@@ -34,6 +34,21 @@ public sealed class UpdateInstaller(string folder)
             await source.CopyToAsync(destination, token);
         }
 
+        // A download can arrive complete, successful and wrong: a festival's wifi
+        // captive portal and a GitHub error page both answer 200 with a page of
+        // HTML. Nothing downstream would notice - the swap happens as the app
+        // closes and the failure shows up as a till that will not start the
+        // following evening. GitHub states the size, so check it.
+        var written = new FileInfo(partial).Length;
+
+        if (release.SizeBytes > 0 && written != release.SizeBytes)
+        {
+            Delete(partial);
+            throw new IOException(
+                $"A transferência trouxe {written} bytes em vez de {release.SizeBytes}. "
+                + "Verifique a ligação à Internet e tente outra vez.");
+        }
+
         File.Move(partial, PendingPath, overwrite: true);
         return PendingPath;
     }
