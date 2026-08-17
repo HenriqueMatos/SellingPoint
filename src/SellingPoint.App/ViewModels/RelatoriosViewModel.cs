@@ -95,6 +95,20 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
     [ObservableProperty] public partial bool IsSessionOpen { get; set; }
     [ObservableProperty] public partial string CountedEntry { get; set; } = "";
 
+    // Taking a festival off a shared machine. Deliberately gated on having exported
+    // it first: the automatic backups live in the same folder as the database and
+    // would be deleted with it, so without this there would be no copy anywhere.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DeleteEventLabel))]
+    public partial bool DeleteArmed { get; set; }
+
+    [ObservableProperty] public partial bool CanDeleteEvent { get; set; }
+
+    public string DeleteEventLabel => DeleteArmed ? "Apagar mesmo esta festa?" : "Apagar esta festa";
+
+    /// <summary>The festival the export on disk belongs to, so it cannot unlock another.</summary>
+    private int _exportedEventId;
+
     [ObservableProperty] public partial bool IsEventSelected { get; set; }
     [ObservableProperty] public partial string Title { get; set; } = "";
     [ObservableProperty] public partial string Subtitle { get; set; } = "";
@@ -195,6 +209,10 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
         _report = null;
         _eventReport = null;
         CloseArmed = false;
+        DeleteArmed = false;
+
+        // The export unlocks the festival it was taken of, and no other.
+        CanDeleteEvent = value?.Event is { } chosen && chosen.Id == _exportedEventId;
 
         HasReport = value is not null;
         if (value is null)
@@ -386,6 +404,74 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
 
     [RelayCommand]
     private void Backup() => StatusMessage = $"Cópia de segurança em {services.Db.Backup(DateTime.Now)}";
+
+    /// <summary>
+    /// Writes the festival out and takes a copy of the whole database, then lets
+    /// the delete button work. Both, not one: the CSV is what a treasurer reads,
+    /// the copy is what puts the sales back if somebody regrets this.
+    /// </summary>
+    [RelayCommand]
+    private void ExportForDelete()
+    {
+        if (_eventReport is null) return;
+
+        var file = Export();
+        if (file is null) return;
+
+        var backup = services.Db.Backup(DateTime.Now);
+
+        _exportedEventId = _eventReport.Event.Id;
+        CanDeleteEvent = true;
+        DeleteArmed = false;
+
+        StatusMessage = $"Guardado em {file} e em {backup}. "
+                        + "Leve estes ficheiros consigo antes de apagar.";
+    }
+
+    /// <summary>
+    /// Removes the festival from this machine. Products, prices and settings stay,
+    /// so the next one does not begin by retyping forty products.
+    /// </summary>
+    [RelayCommand]
+    private void DeleteEvent()
+    {
+        if (_eventReport is not { } report) return;
+
+        if (!CanDeleteEvent)
+        {
+            StatusMessage = "Exporte a festa primeiro. Depois de apagada não há por onde a ir buscar.";
+            return;
+        }
+
+        if (!DeleteArmed)
+        {
+            DeleteArmed = true;
+            StatusMessage = $"Apagar «{report.Event.Name}» tira desta máquina as suas "
+                            + $"{report.Nights.Count} noite(s) e {report.SalesCount} venda(s). "
+                            + "Os produtos e os preços ficam. Toque outra vez para confirmar.";
+            return;
+        }
+
+        var name = report.Event.Name;
+
+        try
+        {
+            services.Sales.DeleteEvent(report.Event.Id);
+        }
+        catch (InvalidOperationException e)
+        {
+            DeleteArmed = false;
+            StatusMessage = e.Message;
+            return;
+        }
+
+        DeleteArmed = false;
+        CanDeleteEvent = false;
+        _exportedEventId = 0;
+
+        Load();
+        StatusMessage = $"«{name}» apagada desta máquina. Os produtos e os preços ficaram.";
+    }
 
     /// <summary>The whole festival on one slip, with a line per night.</summary>
     private List<string> BuildPrintedSummary(EventReport report)

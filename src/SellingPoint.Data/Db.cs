@@ -64,10 +64,14 @@ public sealed class Db(string path)
     /// </summary>
     private static void Migrate(SqliteConnection connection)
     {
-        var version = connection.ExecuteScalar<int>(
-            "SELECT CAST(value AS INTEGER) FROM setting WHERE key = 'schema_version'");
+        // Asked of the database rather than of the version number it is stamped
+        // with. The stamp is bookkeeping and can be wrong - a database whose
+        // schema_version row went missing gets stamped with the current one by
+        // schema.sql and would then skip a step it still needs. The column either
+        // exists or it does not, and that cannot be wrong.
+        var columns = connection.Query<string>("SELECT name FROM pragma_table_info('session')").ToList();
 
-        if (version < 2) SessionsBelongToAnEvent(connection);
+        if (!columns.Contains("event_id")) SessionsBelongToAnEvent(connection);
 
         // Both paths have session.event_id by now - the one schema.sql builds fresh
         // and the one the step above alters - so this is the first point at which

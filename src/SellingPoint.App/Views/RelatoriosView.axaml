@@ -218,11 +218,32 @@
             </StackPanel>
           </Border>
 
-          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,20">
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,14">
             <Button Content="Exportar CSV" Command="{Binding ExportCsvCommand}" />
             <Button Content="Imprimir resumo" Command="{Binding PrintSummaryCommand}" />
             <Button Content="Cópia de segurança" Command="{Binding BackupCommand}" />
           </StackPanel>
+
+          <!-- Taking a festival off a shared machine. Only offered for a whole
+               festival, never a single night: half a festival on the computer and
+               half gone is worse than either. -->
+          <Border Classes="panel cartao" IsVisible="{Binding IsEventSelected}">
+            <StackPanel>
+              <TextBlock Text="Tirar esta festa do computador" Classes="section" />
+              <TextBlock Classes="hint" TextWrapping="Wrap" Margin="0,0,0,12"
+                         Text="Apaga as noites, as vendas e os talões desta festa. Os produtos, os preços e as definições ficam, para a próxima festa não começar por reescrever tudo. Não há como voltar atrás — por isso é preciso exportar primeiro." />
+              <StackPanel Orientation="Horizontal" Spacing="24">
+                <Button Content="Exportar e copiar" Classes="primary"
+                        Command="{Binding ExportForDeleteCommand}" />
+                <Button Content="{Binding DeleteEventLabel}" Classes="danger-quiet"
+                        Classes.armed="{Binding DeleteArmed}"
+                        IsEnabled="{Binding CanDeleteEvent}"
+                        Command="{Binding DeleteEventCommand}" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <Border Height="20" Background="Transparent" />
         </StackPanel>
       </ScrollViewer>
     </Grid>

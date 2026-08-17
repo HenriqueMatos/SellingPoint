@@ -227,6 +227,41 @@ public class MigrationTests
     }
 
     [Fact]
+    public void The_migration_reads_dates_in_the_shape_the_app_writes_them()
+    {
+        // The fixture above writes opened_at by hand. That proves the migration
+        // works on strings this test chose, which is worth nothing unless they are
+        // the strings the application itself produces - and the year is pulled out
+        // of that column with substr, so the format is not an implementation
+        // detail, it is the thing being relied on.
+        using var t = new TempDb();
+        t.Sales.OpenSession("Sexta", 0, new DateTime(2026, 8, 14, 21, 0, 0));
+
+        using var c = t.Db.Open();
+
+        Assert.Equal("2026-08-14 21:00:00", c.ExecuteScalar<string>("SELECT opened_at FROM session"));
+        Assert.Equal("2026", c.ExecuteScalar<string>("SELECT substr(opened_at, 1, 4) FROM session"));
+    }
+
+    [Fact]
+    public void A_database_missing_its_version_stamp_is_still_migrated()
+    {
+        // schema.sql stamps a version row that is not there, so a database whose
+        // stamp went missing would be marked current and skip a step it needs.
+        // The migration asks the table what columns it has instead.
+        using var v1 = new VersionOne();
+        v1.AddNight("Sábado", "2026-08-15 21:00:00", "2026-08-16 02:00:00", 0, 200);
+
+        using (var c = v1.Open()) c.Execute("DELETE FROM setting WHERE key = 'schema_version'");
+
+        new Db(v1.Path).Initialize(seedIfEmpty: false);
+
+        var sales = new SalesRepository(new Db(v1.Path));
+        Assert.Equal("Festa 2026", sales.GetEvents().Single().Name);
+        Assert.NotNull(sales.GetSessions().Single().EventId);
+    }
+
+    [Fact]
     public void A_database_created_today_is_already_at_the_current_version()
     {
         // The fresh path must not run the migration at all: schema.sql builds the

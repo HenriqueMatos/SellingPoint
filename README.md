@@ -27,6 +27,20 @@ Windows program, single file, no installer. Runs offline on one laptop.
 - **Close the night** — takings split cash vs card, per product, per category,
   expected cash against what was counted, stock left. CSV export, printed
   closing summary, automatic database backup.
+- **Add up the festival** — a festival runs several days, and each day is its own
+  session with its own float and its own count, because whoever stands at the till
+  changes. The event above them gives the total: sales, cash, card, and per
+  product and per category summed across every night. A night nobody counted is
+  left out of the difference and said so, rather than reported as money missing.
+- **Sangria** — cash carried out of the drawer mid-evening, with its hour and its
+  reason. Expected cash discounts it, so the count at the end still means
+  something after somebody walks the takings to a car.
+- **Find a slip** — someone holding ticket 87 who says they were never served.
+  See what was on it and print it again.
+- **Clear a festival off the machine** — the till is shared, so a committee can
+  take a whole festival away: nights, sales, slips, cash movements. Products,
+  prices and settings stay, so the next one does not begin by retyping everything.
+  It cannot be done until the festival has been exported and copied.
 
 ## Running it
 

@@ -67,6 +67,48 @@ public sealed class SalesRepository(Db db)
         c.Execute("UPDATE event SET closed_at = @now WHERE id = @eventId", new { now, eventId });
     }
 
+    /// <summary>
+    /// Removes a festival from this machine: its nights, its sales, the lines of
+    /// those sales, the slips, the cash movements and the stock adjustments made
+    /// during it. Products, prices, categories and settings stay, so the till is
+    /// ready for the next festival without being set up again.
+    ///
+    /// Written out by hand and in order rather than left to the database. Sales
+    /// reference a session with no ON DELETE CASCADE, so deleting the session first
+    /// fails the constraint; print_job and stock_adjustment carry an id with no
+    /// foreign key at all, so nothing would remove them. For something this
+    /// destructive, being able to read the order is worth more than being clever.
+    ///
+    /// Refuses while a night is still open: that night's takings are not counted
+    /// yet, and it would be deleting a till somebody is standing at.
+    /// </summary>
+    public void DeleteEvent(int eventId)
+    {
+        using var c = db.Open();
+
+        var openNight = c.ExecuteScalar<string?>(
+            "SELECT name FROM session WHERE event_id = @eventId AND closed_at IS NULL LIMIT 1",
+            new { eventId });
+
+        if (openNight is not null)
+            throw new InvalidOperationException($"A sessão '{openNight}' ainda está aberta.");
+
+        using var tx = c.BeginTransaction();
+        const string nights = "SELECT id FROM session WHERE event_id = @eventId";
+
+        c.Execute($"DELETE FROM print_job WHERE sale_id IN (SELECT id FROM sale WHERE session_id IN ({nights}))",
+            new { eventId }, tx);
+
+        // sale_line goes with its sale, by cascade.
+        c.Execute($"DELETE FROM sale WHERE session_id IN ({nights})", new { eventId }, tx);
+        c.Execute($"DELETE FROM cash_movement WHERE session_id IN ({nights})", new { eventId }, tx);
+        c.Execute($"DELETE FROM stock_adjustment WHERE session_id IN ({nights})", new { eventId }, tx);
+        c.Execute("DELETE FROM session WHERE event_id = @eventId", new { eventId }, tx);
+        c.Execute("DELETE FROM event WHERE id = @eventId", new { eventId }, tx);
+
+        tx.Commit();
+    }
+
     public void RenameEvent(int eventId, string name)
     {
         using var c = db.Open();
