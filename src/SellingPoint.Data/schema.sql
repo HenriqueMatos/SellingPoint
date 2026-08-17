@@ -28,14 +28,31 @@ CREATE TABLE IF NOT EXISTS product (
 );
 CREATE INDEX IF NOT EXISTS ix_product_category ON product(category_id);
 
+-- One festival. Several days of it are several sessions, each with its own float
+-- and its own count, because the person at the till changes; the event is what
+-- adds them up.
+CREATE TABLE IF NOT EXISTS event (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  name       TEXT    NOT NULL,
+  created_at TEXT    NOT NULL,
+  closed_at  TEXT
+);
+
+-- event_id is here for databases created from this file. Databases that predate
+-- it get the column from the migration in Db.Migrate, which is what
+-- schema_version exists for.
 CREATE TABLE IF NOT EXISTS session (
   id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+  event_id              INTEGER REFERENCES event(id),
   name                  TEXT    NOT NULL,
   opened_at             TEXT    NOT NULL,
   closed_at             TEXT,
   opening_float_cents   INTEGER NOT NULL DEFAULT 0,
   closing_counted_cents INTEGER
 );
+-- The index on event_id is made in Db.Migrate, not here: on a database that
+-- predates the column, this file's CREATE TABLE is a no-op and the index would be
+-- asked for before the migration has added the column to index.
 
 CREATE TABLE IF NOT EXISTS sale (
   id                  INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -109,4 +126,7 @@ CREATE TABLE IF NOT EXISTS cash_movement (
 );
 CREATE INDEX IF NOT EXISTS ix_cash_movement_session ON cash_movement(session_id);
 
-INSERT OR IGNORE INTO setting(key, value) VALUES ('schema_version', '1');
+-- A database created from this file already has everything, so it starts at the
+-- current version and no migration runs on it. OR IGNORE is what makes that safe:
+-- an older database keeps the 1 it was stamped with and gets migrated instead.
+INSERT OR IGNORE INTO setting(key, value) VALUES ('schema_version', '2');

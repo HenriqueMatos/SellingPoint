@@ -47,9 +47,90 @@ public sealed class Db(string path)
         connection.Execute("PRAGMA journal_mode = WAL;");
 
         connection.Execute(ReadSchema());
+        Migrate(connection);
 
         if (seedIfEmpty && connection.ExecuteScalar<long>("SELECT COUNT(*) FROM category") == 0)
             Seed(connection);
+    }
+
+    /// <summary>
+    /// The changes schema.sql cannot make on a database that already exists. It is
+    /// additive by CREATE IF NOT EXISTS, which covers new tables and new indexes
+    /// and nothing else; a new column on a table that is already there needs this.
+    ///
+    /// Each step runs once. The version is only moved forward inside the step's own
+    /// transaction, so a step that fails halfway leaves the database on the version
+    /// it was and is tried again next time rather than half applied.
+    /// </summary>
+    private static void Migrate(SqliteConnection connection)
+    {
+        var version = connection.ExecuteScalar<int>(
+            "SELECT CAST(value AS INTEGER) FROM setting WHERE key = 'schema_version'");
+
+        if (version < 2) SessionsBelongToAnEvent(connection);
+
+        // Both paths have session.event_id by now - the one schema.sql builds fresh
+        // and the one the step above alters - so this is the first point at which
+        // the index can be asked for at all.
+        connection.Execute("CREATE INDEX IF NOT EXISTS ix_session_event ON session(event_id)");
+    }
+
+    /// <summary>
+    /// Version 2: every session belongs to a festival.
+    ///
+    /// What is already in the database has to go somewhere, so the sessions of one
+    /// calendar year become one event - a village festival is annual, so the guess
+    /// is a good one, and the name can be corrected on screen afterwards.
+    ///
+    /// Deliberately done in SQL with no clock: an event's created_at is the first
+    /// session it holds, which is both truer than "now" and the same answer however
+    /// many times this is read.
+    /// </summary>
+    private static void SessionsBelongToAnEvent(SqliteConnection connection)
+    {
+        using var tx = connection.BeginTransaction();
+
+        connection.Execute("ALTER TABLE session ADD COLUMN event_id INTEGER REFERENCES event(id)",
+            transaction: tx);
+        connection.Execute("CREATE INDEX IF NOT EXISTS ix_session_event ON session(event_id)",
+            transaction: tx);
+
+        connection.Execute(
+            """
+            INSERT INTO event(name, created_at)
+            SELECT 'Festa ' || substr(opened_at, 1, 4), MIN(opened_at)
+            FROM session
+            GROUP BY substr(opened_at, 1, 4);
+            """, transaction: tx);
+
+        // Matched on the name this migration just wrote. Safe because it runs
+        // before any event a person could have named, and only once.
+        connection.Execute(
+            """
+            UPDATE session SET event_id = (
+              SELECT e.id FROM event e
+              WHERE e.name = 'Festa ' || substr(session.opened_at, 1, 4)
+            );
+            """, transaction: tx);
+
+        // A festival whose every session is closed is over, and is stamped with the
+        // last of them. One still holding an open session stays open - which also
+        // keeps the "one open event at a time" rule true, since only one session
+        // can be open to begin with.
+        connection.Execute(
+            """
+            UPDATE event SET closed_at = (
+              SELECT MAX(s.closed_at) FROM session s WHERE s.event_id = event.id
+            )
+            WHERE NOT EXISTS (
+              SELECT 1 FROM session s WHERE s.event_id = event.id AND s.closed_at IS NULL
+            );
+            """, transaction: tx);
+
+        connection.Execute("UPDATE setting SET value = '2' WHERE key = 'schema_version'",
+            transaction: tx);
+
+        tx.Commit();
     }
 
     /// <summary>Timestamped copy of the whole database. Called on session close and

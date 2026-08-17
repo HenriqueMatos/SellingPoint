@@ -19,21 +19,96 @@ public sealed class SalesRepository(Db db)
         return c.Query<Session>("SELECT * FROM session ORDER BY id DESC").AsList();
     }
 
-    public Session OpenSession(string name, int openingFloatCents, DateTime now)
+    // --- festivals ---------------------------------------------------------
+    // A festival holds the nights of one event. One is open at a time, which falls
+    // out of only one session being open at a time.
+
+    public List<Event> GetEvents()
+    {
+        using var c = db.Open();
+        return c.Query<Event>("SELECT * FROM event ORDER BY id DESC").AsList();
+    }
+
+    public Event? GetOpenEvent()
+    {
+        using var c = db.Open();
+        return c.QuerySingleOrDefault<Event>(
+            "SELECT * FROM event WHERE closed_at IS NULL ORDER BY id DESC LIMIT 1");
+    }
+
+    public Event OpenEvent(string name, DateTime now)
+    {
+        using var c = db.Open();
+        var id = c.ExecuteScalar<int>(
+            """
+            INSERT INTO event(name, created_at) VALUES(@name, @now);
+            SELECT last_insert_rowid();
+            """, new { name, now });
+
+        return new Event { Id = id, Name = name, CreatedAt = now };
+    }
+
+    /// <summary>
+    /// Ends a festival. Refuses while one of its nights is still open, because the
+    /// night's takings are not counted until it closes and the festival's total
+    /// would be short by them.
+    /// </summary>
+    public void CloseEvent(int eventId, DateTime now)
+    {
+        using var c = db.Open();
+
+        var openNight = c.ExecuteScalar<string?>(
+            "SELECT name FROM session WHERE event_id = @eventId AND closed_at IS NULL LIMIT 1",
+            new { eventId });
+
+        if (openNight is not null)
+            throw new InvalidOperationException($"A sessão '{openNight}' ainda está aberta.");
+
+        c.Execute("UPDATE event SET closed_at = @now WHERE id = @eventId", new { now, eventId });
+    }
+
+    public void RenameEvent(int eventId, string name)
+    {
+        using var c = db.Open();
+        c.Execute("UPDATE event SET name = @name WHERE id = @eventId", new { name, eventId });
+    }
+
+    public List<Session> GetSessions(int eventId)
+    {
+        using var c = db.Open();
+        return c.Query<Session>(
+            "SELECT * FROM session WHERE event_id = @eventId ORDER BY id DESC",
+            new { eventId }).AsList();
+    }
+
+    /// <summary>
+    /// Opens a night inside a festival.
+    ///
+    /// With no event given it joins the open one, and starts one named after the
+    /// night if there is none. The invariant - that no session exists outside a
+    /// festival - is kept here rather than trusted to every caller.
+    /// </summary>
+    public Session OpenSession(string name, int openingFloatCents, DateTime now, int? eventId = null)
     {
         if (GetOpenSession() is { } existing)
             throw new InvalidOperationException($"Session '{existing.Name}' is still open.");
 
+        eventId ??= GetOpenEvent()?.Id ?? OpenEvent(name, now).Id;
+
         using var c = db.Open();
         var id = c.ExecuteScalar<int>(
             """
-            INSERT INTO session(name, opened_at, opening_float_cents)
-            VALUES(@name, @now, @openingFloatCents);
+            INSERT INTO session(event_id, name, opened_at, opening_float_cents)
+            VALUES(@eventId, @name, @now, @openingFloatCents);
             SELECT last_insert_rowid();
             """,
-            new { name, now, openingFloatCents });
+            new { eventId, name, now, openingFloatCents });
 
-        return new Session { Id = id, Name = name, OpenedAt = now, OpeningFloatCents = openingFloatCents };
+        return new Session
+        {
+            Id = id, EventId = eventId, Name = name,
+            OpenedAt = now, OpeningFloatCents = openingFloatCents
+        };
     }
 
     /// <summary>

@@ -58,6 +58,70 @@ public sealed record SessionReport
     public int? VarianceCents => Session.ClosingCountedCents - ExpectedCashCents;
 }
 
+/// <summary>
+/// A whole festival: its nights added up.
+///
+/// Built by summing the night reports rather than by widening every query to take
+/// a set of sessions. A festival is three or four nights, so the cost is nothing,
+/// and the per-night figures stay available - which is what somebody actually wants
+/// when the total does not look right.
+/// </summary>
+public sealed record EventReport
+{
+    public required Event Event { get; init; }
+
+    /// <summary>Newest night first, as the screen lists them.</summary>
+    public required IReadOnlyList<SessionReport> Nights { get; init; }
+
+    public int SalesCount => Nights.Sum(n => n.SalesCount);
+    public int CashCents => Nights.Sum(n => n.CashCents);
+    public int CardCents => Nights.Sum(n => n.CardCents);
+    public int TotalCents => CashCents + CardCents;
+
+    public int FloatCents => Nights.Sum(n => n.Session.OpeningFloatCents);
+    public int CashMovementCents => Nights.Sum(n => n.CashMovementCents);
+    public int ExpectedCashCents => Nights.Sum(n => n.ExpectedCashCents);
+
+    /// <summary>Nights whose cash was never counted. Their money is not in the count below.</summary>
+    public int UncountedNights => Nights.Count(n => n.Session.ClosingCountedCents is null);
+
+    /// <summary>What was counted, over the nights that were counted at all.</summary>
+    public int CountedCashCents =>
+        Nights.Sum(n => n.Session.ClosingCountedCents ?? 0);
+
+    /// <summary>
+    /// Only over the nights that were counted. Summing an uncounted night as zero
+    /// would report the whole festival as short by that night's takings.
+    /// </summary>
+    public int? VarianceCents => Nights.Count == UncountedNights
+        ? null
+        : Nights.Where(n => n.Session.ClosingCountedCents is not null).Sum(n => n.VarianceCents ?? 0);
+
+    public IReadOnlyList<ProductSales> Products => Nights
+        .SelectMany(n => n.Products)
+        .GroupBy(p => (p.Name, p.CategoryName))
+        .Select(g => new ProductSales
+        {
+            Name = g.Key.Name, CategoryName = g.Key.CategoryName,
+            Units = g.Sum(p => p.Units), TotalCents = g.Sum(p => p.TotalCents)
+        })
+        .OrderByDescending(p => p.TotalCents)
+        .ToList();
+
+    public IReadOnlyList<CategorySales> Categories => Nights
+        .SelectMany(n => n.Categories)
+        .GroupBy(c => c.Name)
+        .Select(g => new CategorySales
+        {
+            Name = g.Key, Units = g.Sum(c => c.Units), TotalCents = g.Sum(c => c.TotalCents)
+        })
+        .OrderByDescending(c => c.TotalCents)
+        .ToList();
+
+    public IReadOnlyList<CashMovement> CashMovements =>
+        Nights.SelectMany(n => n.CashMovements).OrderBy(m => m.CreatedAt).ToList();
+}
+
 public sealed class ReportRepository(Db db)
 {
     public SessionReport Build(Session session)
@@ -124,6 +188,68 @@ public sealed class ReportRepository(Db db)
             Stock = stock,
             CashMovements = movements
         };
+    }
+
+    /// <summary>Every night of a festival, added up.</summary>
+    public EventReport BuildForEvent(Event festival, IReadOnlyList<Session> nights)
+        => new() { Event = festival, Nights = nights.Select(Build).ToList() };
+
+    /// <summary>
+    /// The festival as a whole. Semicolon separated with comma decimals, like the
+    /// per-night export.
+    /// </summary>
+    public static string ToCsv(EventReport report)
+    {
+        var csv = new System.Text.StringBuilder();
+
+        csv.AppendLine($"Festa;{Escape(report.Event.Name)}");
+        csv.AppendLine($"Noites;{report.Nights.Count}");
+        csv.AppendLine($"Vendas;{report.SalesCount}");
+        csv.AppendLine($"Dinheiro;{Money.FormatPlain(report.CashCents)}");
+        csv.AppendLine($"Cartão;{Money.FormatPlain(report.CardCents)}");
+        csv.AppendLine($"Total;{Money.FormatPlain(report.TotalCents)}");
+        csv.AppendLine($"Fundos de caixa;{Money.FormatPlain(report.FloatCents)}");
+
+        if (report.CashMovements.Count > 0)
+            csv.AppendLine($"Sangrias e reforços;{Money.FormatPlain(report.CashMovementCents)}");
+
+        csv.AppendLine($"Dinheiro esperado;{Money.FormatPlain(report.ExpectedCashCents)}");
+        csv.AppendLine($"Dinheiro contado;{Money.FormatPlain(report.CountedCashCents)}");
+
+        if (report.VarianceCents is { } variance)
+            csv.AppendLine($"Diferença;{Money.FormatPlain(variance)}");
+
+        // Said out loud rather than left for someone to work out from the total: a
+        // night nobody counted is money the difference above knows nothing about.
+        if (report.UncountedNights > 0)
+            csv.AppendLine($"Noites sem contagem;{report.UncountedNights}");
+
+        csv.AppendLine();
+        csv.AppendLine("Noite;Aberta;Fechada;Vendas;Dinheiro;Cartão;Total;Diferença");
+        foreach (var night in report.Nights)
+        {
+            csv.AppendLine(string.Join(';',
+                Escape(night.Session.Name),
+                $"{night.Session.OpenedAt:dd/MM/yyyy HH:mm}",
+                night.Session.ClosedAt is { } c ? $"{c:dd/MM/yyyy HH:mm}" : "aberta",
+                night.SalesCount,
+                Money.FormatPlain(night.CashCents),
+                Money.FormatPlain(night.CardCents),
+                Money.FormatPlain(night.TotalCents),
+                night.VarianceCents is { } v ? Money.FormatPlain(v) : "—"));
+        }
+
+        csv.AppendLine();
+        csv.AppendLine("Produto;Categoria;Unidades;Total");
+        foreach (var p in report.Products)
+            csv.AppendLine($"{Escape(p.Name)};{Escape(p.CategoryName)};{p.Units};{Money.FormatPlain(p.TotalCents)}");
+
+        csv.AppendLine();
+        csv.AppendLine("Categoria;Unidades;Total");
+        foreach (var c in report.Categories)
+            csv.AppendLine($"{Escape(c.Name)};{c.Units};{Money.FormatPlain(c.TotalCents)}");
+
+        return csv.ToString();
     }
 
     /// <summary>

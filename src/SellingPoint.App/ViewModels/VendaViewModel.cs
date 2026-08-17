@@ -283,11 +283,23 @@ public partial class VendaViewModel : ViewModelBase
         RefreshPreview();
     }
 
+    // Which festival tonight belongs to. Asked once per festival, not once per
+    // night: with one already running the night joins it and nobody is asked.
+    [ObservableProperty] public partial string EventNameEntry { get; set; } = "";
+    [ObservableProperty] public partial bool NeedsEvent { get; set; }
+    [ObservableProperty] public partial string EventText { get; set; } = "";
+
     [RelayCommand]
     private void OpenSessionPanel()
     {
         SessionNameEntry = $"Sessão {DateTime.Now:dd/MM/yyyy}";
         SessionFloatEntry = "";
+
+        var festival = services.Sales.GetOpenEvent();
+        NeedsEvent = festival is null;
+        EventNameEntry = festival?.Name ?? $"Festa {DateTime.Now:yyyy}";
+        EventText = festival is null ? "" : $"Esta noite entra em «{festival.Name}».";
+
         IsSessionPanelOpen = true;
     }
 
@@ -303,10 +315,32 @@ public partial class VendaViewModel : ViewModelBase
             return;
         }
 
+        if (NeedsEvent && string.IsNullOrWhiteSpace(EventNameEntry))
+        {
+            StatusMessage = "Dê um nome à festa.";
+            return;
+        }
+
         // An empty float is a legitimate answer, not an error.
         if (!Money.TryParseEuros(SessionFloatEntry, out var floatCents)) floatCents = 0;
 
-        services.Sales.OpenSession(SessionNameEntry.Trim(), floatCents, DateTime.Now);
+        // The repository refuses a second open session, and the button that gets
+        // here is hidden while one is open - but a stale screen could still ask,
+        // and an exception out of a command handler takes the whole till with it.
+        try
+        {
+            var festival = NeedsEvent
+                ? services.Sales.OpenEvent(EventNameEntry.Trim(), DateTime.Now)
+                : services.Sales.GetOpenEvent();
+
+            services.Sales.OpenSession(SessionNameEntry.Trim(), floatCents, DateTime.Now, festival?.Id);
+        }
+        catch (InvalidOperationException e)
+        {
+            StatusMessage = e.Message;
+            RefreshSession();
+            return;
+        }
 
         IsSessionPanelOpen = false;
         RefreshSession();

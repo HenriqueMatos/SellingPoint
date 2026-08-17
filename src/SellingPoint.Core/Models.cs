@@ -30,10 +30,33 @@ public class Product
     public int StockQty { get; set; }
 }
 
-/// <summary>One event or one night. Ticket numbers restart at 1 with each session.</summary>
+/// <summary>
+/// One festival. Several days of it are several sessions - each with its own float
+/// and its own count, because whoever stands at the till changes - and the event
+/// is what adds them up.
+/// </summary>
+public class Event
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public DateTime CreatedAt { get; set; }
+    public DateTime? ClosedAt { get; set; }
+
+    public bool IsOpen => ClosedAt is null;
+}
+
+/// <summary>One night of a festival. Ticket numbers restart at 1 with each session.</summary>
 public class Session
 {
     public int Id { get; set; }
+
+    /// <summary>
+    /// The festival this night belongs to. Nullable only because the column was
+    /// added to databases that already had sessions; every session written since
+    /// has one, and the repository keeps it that way.
+    /// </summary>
+    public int? EventId { get; set; }
+
     public string Name { get; set; } = "";
     public DateTime OpenedAt { get; set; }
     public DateTime? ClosedAt { get; set; }

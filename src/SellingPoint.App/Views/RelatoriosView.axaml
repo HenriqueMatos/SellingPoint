@@ -16,14 +16,19 @@
       <!-- Session list -->
       <Border Grid.Column="0" Classes="panel cartao" Margin="0,0,12,0">
         <Grid RowDefinitions="Auto,*">
-          <TextBlock Grid.Row="0" Text="Sessões" Classes="section" />
+          <TextBlock Grid.Row="0" Text="Festas e noites" Classes="section" />
+          <!-- Festivals in bold with their nights indented under them. One list of
+               two kinds rather than a tree: a tree means a disclosure arrow to hit
+               with a finger, and there are only ever a handful of rows. -->
           <ListBox Grid.Row="1" ItemsSource="{Binding Sessions}"
                    SelectedItem="{Binding SelectedSession}" Background="Transparent">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:SessionRowViewModel">
-                <StackPanel Margin="0,4">
-                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="15" LineHeight="26" />
-                  <TextBlock Text="{Binding Detail}" FontSize="{DynamicResource TextSmall}" Foreground="{DynamicResource InkMuted}" />
+                <StackPanel Margin="{Binding Indent}">
+                  <TextBlock Text="{Binding Name}" FontWeight="{Binding Weight}"
+                             FontSize="15" LineHeight="26" />
+                  <TextBlock Text="{Binding Detail}" FontSize="{DynamicResource TextSmall}"
+                             Foreground="{DynamicResource InkMuted}" />
                 </StackPanel>
               </DataTemplate>
             </ListBox.ItemTemplate>
@@ -40,6 +45,15 @@
                night's total at 30px needs more than that - a TextBlock clips with
                no ellipsis, so "1.234,56 EUR" would have been read as "1.234,5" at
                cash-up and counted against. -->
+          <!-- Whose numbers these are: a festival or one of its nights. -->
+          <Border Classes="panel cartao">
+            <StackPanel>
+              <TextBlock Text="{Binding Title}" FontSize="{DynamicResource TextTitle}" FontWeight="Bold" />
+              <TextBlock Text="{Binding Subtitle}" Foreground="{DynamicResource InkMuted}"
+                         IsVisible="{Binding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+          </Border>
+
           <Border Classes="panel cartao">
             <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
               <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,12,10">
@@ -97,6 +111,14 @@
                 <TextBlock Grid.Column="0" Text="Diferença" FontWeight="Bold" />
                 <TextBlock Grid.Column="1" Text="{Binding VarianceText}" FontWeight="Bold" />
               </Grid>
+
+              <!-- A night nobody counted is money the difference above knows
+                   nothing about, and the difference looking right is exactly when
+                   that matters most. -->
+              <Border Background="#33D97706" CornerRadius="8" Padding="12" Margin="0,10,0,0"
+                      IsVisible="{Binding UncountedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding UncountedText}" TextWrapping="Wrap" />
+              </Border>
 
               <!-- Sangria. Sits with the session open only: a closed session has
                    been counted, and moving its cash afterwards would change a

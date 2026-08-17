@@ -420,7 +420,19 @@
       <Border Classes="overlay-card" Margin="16">
         <StackPanel Spacing="8">
           <TextBlock Text="Abrir sessão" FontSize="{DynamicResource TextTitle}" FontWeight="Bold" />
-          <TextBlock Text="Nome" Classes="label" />
+
+          <!-- The festival is asked for once, when there is not one running. Every
+               night after that joins it without anybody being asked again. -->
+          <StackPanel Spacing="8" IsVisible="{Binding NeedsEvent}">
+            <TextBlock Text="Festa" Classes="label" />
+            <TextBox Text="{Binding EventNameEntry}" />
+            <TextBlock Classes="hint" TextWrapping="Wrap"
+                       Text="As noites desta festa ficam juntas, e no fim há um total de todas." />
+          </StackPanel>
+          <TextBlock Text="{Binding EventText}" Classes="hint" TextWrapping="Wrap"
+                     IsVisible="{Binding !NeedsEvent}" />
+
+          <TextBlock Text="Noite" Classes="label" />
           <TextBox Text="{Binding SessionNameEntry}" />
           <TextBlock Text="Fundo de caixa (opcional)" Classes="label" />
           <TextBox Text="{Binding SessionFloatEntry}" PlaceholderText="0,00" Classes="numeric" />
