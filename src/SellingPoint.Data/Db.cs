@@ -62,7 +62,7 @@ public sealed class Db(string path)
     /// transaction, so a step that fails halfway leaves the database on the version
     /// it was and is tried again next time rather than half applied.
     /// </summary>
-    private static void Migrate(SqliteConnection connection)
+    private void Migrate(SqliteConnection connection)
     {
         // Asked of the database rather than of the version number it is stamped
         // with. The stamp is bookkeeping and can be wrong - a database whose
@@ -70,8 +70,17 @@ public sealed class Db(string path)
         // schema.sql and would then skip a step it still needs. The column either
         // exists or it does not, and that cannot be wrong.
         var columns = connection.Query<string>("SELECT name FROM pragma_table_info('session')").ToList();
+        if (columns.Contains("event_id")) return;
 
-        if (!columns.Contains("event_id")) SessionsBelongToAnEvent(connection);
+        // A copy of the file as it was, before anything is changed.
+        //
+        // Every destructive thing the screens do takes one first, and this is the
+        // only place the program rewrites the shape of a committee's live database
+        // - once, unattended, at startup. If a step turns out to be wrong for data
+        // nobody here has seen, the way back has to already exist.
+        Backup(connection, "antes-da-migracao");
+
+        SessionsBelongToAnEvent(connection);
 
         // Both paths have session.event_id by now - the one schema.sql builds fresh
         // and the one the step above alters - so this is the first point at which
@@ -140,12 +149,22 @@ public sealed class Db(string path)
     /// <summary>Timestamped copy of the whole database. Called on session close and
     /// from Settings. An event laptop that dies at midnight should not take the
     /// night's takings with it.</summary>
-    public string Backup(DateTime now)
+    public string Backup(DateTime now) => Backup(null, $"backup-{now:yyyyMMdd-HHmmss}");
+
+    /// <summary>
+    /// Copies the database beside itself under the given name. The connection is
+    /// passed in when the caller is already inside Initialize and the file is
+    /// half-open; everywhere else it opens its own.
+    /// </summary>
+    private string Backup(SqliteConnection? existing, string name)
     {
         var dir = System.IO.Path.GetDirectoryName(Path)!;
-        var target = System.IO.Path.Combine(dir, $"backup-{now:yyyyMMdd-HHmmss}.db");
+        var target = System.IO.Path.Combine(dir, $"{name}.db");
 
-        using (var source = Open())
+        var opened = existing is null ? Open() : null;
+        var source = existing ?? opened!;
+
+        using (opened)
         using (var destination = new SqliteConnection($"Data Source={target}"))
         {
             destination.Open();

@@ -99,6 +99,19 @@ public sealed class SalesRepository(Db db)
         c.Execute($"DELETE FROM print_job WHERE sale_id IN (SELECT id FROM sale WHERE session_id IN ({nights}))",
             new { eventId }, tx);
 
+        // Slips with no sale behind them - the closing summary, a test print -
+        // carry the night's cash and card totals in readable text and would
+        // otherwise sit in the database of a shared computer after the festival was
+        // "removed". They have no session to match on, so they are matched by when
+        // they were made: inside this festival's own span and no wider.
+        c.Execute(
+            $"""
+             DELETE FROM print_job
+             WHERE sale_id IS NULL
+               AND created_at >= (SELECT MIN(opened_at) FROM session WHERE event_id = @eventId)
+               AND created_at <= (SELECT MAX(COALESCE(closed_at, opened_at)) FROM session WHERE event_id = @eventId)
+             """, new { eventId }, tx);
+
         // sale_line goes with its sale, by cascade.
         c.Execute($"DELETE FROM sale WHERE session_id IN ({nights})", new { eventId }, tx);
         c.Execute($"DELETE FROM cash_movement WHERE session_id IN ({nights})", new { eventId }, tx);

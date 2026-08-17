@@ -104,10 +104,17 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
 
     [ObservableProperty] public partial bool CanDeleteEvent { get; set; }
 
-    public string DeleteEventLabel => DeleteArmed ? "Apagar mesmo esta festa?" : "Apagar esta festa";
+    public string DeleteEventLabel => "Apagar esta festa";
 
-    /// <summary>The festival the export on disk belongs to, so it cannot unlock another.</summary>
-    private int _exportedEventId;
+    /// <summary>
+    /// What the export on disk actually covers.
+    ///
+    /// Not just which festival: how much of it. Export on Saturday, open Sunday
+    /// under the same festival and take four hundred more sales, and an unlock
+    /// keyed on the festival alone would still be good - and Sunday would be
+    /// deleted having never been written to a file.
+    /// </summary>
+    private (int EventId, int Nights, int Sales) _exported;
 
     [ObservableProperty] public partial bool IsEventSelected { get; set; }
     [ObservableProperty] public partial string Title { get; set; } = "";
@@ -211,8 +218,8 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
         CloseArmed = false;
         DeleteArmed = false;
 
-        // The export unlocks the festival it was taken of, and no other.
-        CanDeleteEvent = value?.Event is { } chosen && chosen.Id == _exportedEventId;
+        // The export unlocks the festival it was taken of, at the size it was then.
+        CanDeleteEvent = false;
 
         HasReport = value is not null;
         if (value is null)
@@ -224,7 +231,14 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
 
         if (value.Event is { } festival) ShowEvent(festival);
         else if (value.Session is { } session) ShowNight(session);
+
+        // Checked after the report is built, against what the export covered. A
+        // festival that has grown since needs exporting again.
+        CanDeleteEvent = _eventReport is { } shown && Covered(shown) == _exported;
     }
+
+    private static (int, int, int) Covered(EventReport report)
+        => (report.Event.Id, report.Nights.Count, report.SalesCount);
 
     private void ShowNight(Session session)
     {
@@ -369,8 +383,11 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
 
         if (_eventReport is { } festival)
         {
+            // The id is in the name because two festivals can otherwise collide:
+            // "Festa" created twice on one day, or two in a weekend, would write to
+            // the same path and the second would quietly replace the first.
             file = Path.Combine(folder,
-                $"{Sanitise(festival.Event.Name)}-{festival.Event.CreatedAt:yyyyMMdd}.csv");
+                $"{Sanitise(festival.Event.Name)}-{festival.Event.CreatedAt:yyyyMMdd}-{festival.Event.Id}.csv");
             contents = ReportRepository.ToCsv(festival);
         }
         else if (_report is { } night)
@@ -381,7 +398,13 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
         }
         else return null;
 
-        File.WriteAllText(file, contents, System.Text.Encoding.UTF8);
+        // Written beside and moved into place. WriteAllText truncates first, so a
+        // disk that fills halfway through would leave the good export from an hour
+        // ago as an empty file - and it is the only copy there is.
+        var partial = file + ".part";
+        File.WriteAllText(partial, contents, System.Text.Encoding.UTF8);
+        File.Move(partial, file, overwrite: true);
+
         return file;
     }
 
@@ -413,24 +436,48 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
     [RelayCommand]
     private void ExportForDelete()
     {
-        if (_eventReport is null) return;
+        if (_eventReport is not { } festival) return;
 
-        var file = Export();
-        if (file is null) return;
+        string file;
+        string backup;
 
-        var backup = services.Db.Backup(DateTime.Now);
+        try
+        {
+            if (Export() is not { } written) return;
 
-        _exportedEventId = _eventReport.Event.Id;
+            file = written;
+            backup = services.Db.Backup(DateTime.Now);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // A full disk or a pulled stick must not leave the delete unlocked
+            // pointing at a copy that was never finished.
+            _exported = default;
+            CanDeleteEvent = false;
+            StatusMessage = $"Não consegui gravar a cópia: {e.Message}. Nada foi apagado.";
+            return;
+        }
+
+        _exported = Covered(festival);
         CanDeleteEvent = true;
         DeleteArmed = false;
 
-        StatusMessage = $"Guardado em {file} e em {backup}. "
-                        + "Leve estes ficheiros consigo antes de apagar.";
+        StatusMessage = $"Guardado em {file} e em {backup}. Estes ficheiros estão neste "
+                        + "mesmo computador — leve-os para uma pen ou para outro sítio "
+                        + "antes de apagar, senão a única cópia vai com a máquina.";
     }
 
     /// <summary>
     /// Removes the festival from this machine. Products, prices and settings stay,
     /// so the next one does not begin by retyping forty products.
+    /// </summary>
+    /// <summary>
+    /// Asks. Confirming is a different command on a different button, which only
+    /// appears once this has been pressed - unlike the two-tap confirms elsewhere
+    /// in the app, where arming and confirming share one button. Those cost a
+    /// product or a queue; a double tap on a wet screen here costs a festival, and
+    /// two contacts at one place milliseconds apart is exactly what a wet screen
+    /// produces.
     /// </summary>
     [RelayCommand]
     private void DeleteEvent()
@@ -439,18 +486,38 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
 
         if (!CanDeleteEvent)
         {
-            StatusMessage = "Exporte a festa primeiro. Depois de apagada não há por onde a ir buscar.";
+            StatusMessage = _exported.EventId == report.Event.Id
+                ? "A festa cresceu desde a última cópia. Exporte outra vez antes de apagar."
+                : "Exporte a festa primeiro. Depois de apagada não há por onde a ir buscar.";
             return;
         }
 
-        if (!DeleteArmed)
-        {
-            DeleteArmed = true;
-            StatusMessage = $"Apagar «{report.Event.Name}» tira desta máquina as suas "
-                            + $"{report.Nights.Count} noite(s) e {report.SalesCount} venda(s). "
-                            + "Os produtos e os preços ficam. Toque outra vez para confirmar.";
-            return;
-        }
+        DeleteArmed = true;
+
+        // Said before, not discovered after: slips still queued belong to people who
+        // paid and never got them, and deleting the festival takes them too.
+        var waiting = services.Print.PendingCount > 0
+            ? $" Há {services.Print.PendingCount} talão(ões) ainda por imprimir que se perdem com ela."
+            : "";
+
+        StatusMessage = $"Apagar «{report.Event.Name}» tira desta máquina as suas "
+                        + $"{report.Nights.Count} noite(s), {report.SalesCount} venda(s) e "
+                        + $"{Money.Format(report.TotalCents)} de receita registada."
+                        + waiting
+                        + " Os produtos e os preços ficam. Isto não se desfaz.";
+    }
+
+    [RelayCommand]
+    private void CancelDeleteEvent()
+    {
+        DeleteArmed = false;
+        StatusMessage = "Nada foi apagado.";
+    }
+
+    [RelayCommand]
+    private void ConfirmDeleteEvent()
+    {
+        if (_eventReport is not { } report || !DeleteArmed || !CanDeleteEvent) return;
 
         var name = report.Event.Name;
 
@@ -467,10 +534,32 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
 
         DeleteArmed = false;
         CanDeleteEvent = false;
-        _exportedEventId = 0;
+        _exported = default;
 
         Load();
-        StatusMessage = $"«{name}» apagada desta máquina. Os produtos e os preços ficaram.";
+        StatusMessage = $"«{name}» apagada desta máquina. Os produtos e os preços ficaram. {LeftBehind()}";
+    }
+
+    /// <summary>
+    /// What is still on the disk after the delete, said plainly.
+    ///
+    /// Every automatic copy is a snapshot of the whole database, so one taken while
+    /// the festival was running still holds all of it. They are not deleted here:
+    /// they are the only way back if this was a mistake, and throwing them away
+    /// would make the export gate theatre. But leaving somebody to believe the
+    /// festival is off a shared computer when it is sitting in the next folder
+    /// along is worse than either.
+    /// </summary>
+    private string LeftBehind()
+    {
+        var folder = Path.GetDirectoryName(services.Db.Path);
+        if (folder is null) return "";
+
+        var copies = Directory.GetFiles(folder, "backup-*.db").Length;
+        if (copies == 0) return "";
+
+        return $"Atenção: ficam em {folder} {copies} cópia(s) de segurança que ainda contêm esta festa. "
+               + "Leve-as consigo ou apague-as se quiser mesmo que ela desapareça deste computador.";
     }
 
     /// <summary>The whole festival on one slip, with a line per night.</summary>

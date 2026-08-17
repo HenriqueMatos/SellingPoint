@@ -236,10 +236,28 @@
                 <Button Content="Exportar e copiar" Classes="primary"
                         Command="{Binding ExportForDeleteCommand}" />
                 <Button Content="{Binding DeleteEventLabel}" Classes="danger-quiet"
-                        Classes.armed="{Binding DeleteArmed}"
                         IsEnabled="{Binding CanDeleteEvent}"
                         Command="{Binding DeleteEventCommand}" />
               </StackPanel>
+
+              <!-- Confirming is a different button in a different place, not the
+                   same one tapped twice. Elsewhere in the app a double tap costs a
+                   product or a print queue; here it would cost a festival, and two
+                   contacts milliseconds apart at one spot is exactly what a wet
+                   finger on a cold screen produces. -->
+              <Border Background="#33DC2626" CornerRadius="8" Padding="14" Margin="0,16,0,0"
+                      IsVisible="{Binding DeleteArmed}">
+                <StackPanel Spacing="12">
+                  <TextBlock Text="Isto não se desfaz. Tem os ficheiros exportados guardados noutro sítio?"
+                             TextWrapping="Wrap" FontWeight="SemiBold" />
+                  <StackPanel Orientation="Horizontal" Spacing="24">
+                    <Button Content="Não, cancelar" Classes="quiet"
+                            Command="{Binding CancelDeleteEventCommand}" />
+                    <Button Content="Sim, apagar a festa" Classes="danger armed"
+                            Command="{Binding ConfirmDeleteEventCommand}" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
             </StackPanel>
           </Border>
 

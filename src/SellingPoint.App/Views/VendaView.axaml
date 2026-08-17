@@ -421,16 +421,22 @@
         <StackPanel Spacing="8">
           <TextBlock Text="Abrir sessão" FontSize="{DynamicResource TextTitle}" FontWeight="Bold" />
 
-          <!-- The festival is asked for once, when there is not one running. Every
-               night after that joins it without anybody being asked again. -->
-          <StackPanel Spacing="8" IsVisible="{Binding NeedsEvent}">
+          <!-- Asked for once, when there is not one running. Every night after that
+               joins it without anybody being asked - but the name is always shown,
+               and starting a new one is always offered, because a festival stays
+               open until somebody ends it and next August must not quietly join
+               last August. -->
+          <TextBlock Text="{Binding EventText}" Classes="hint" TextWrapping="Wrap"
+                     IsVisible="{Binding !NeedsEvent}" />
+          <CheckBox IsChecked="{Binding StartNewEvent}" IsVisible="{Binding !NeedsEvent}"
+                    Content="É outra festa — começar uma nova" />
+
+          <StackPanel Spacing="8" IsVisible="{Binding AsksForEventName}">
             <TextBlock Text="Festa" Classes="label" />
             <TextBox Text="{Binding EventNameEntry}" />
             <TextBlock Classes="hint" TextWrapping="Wrap"
                        Text="As noites desta festa ficam juntas, e no fim há um total de todas." />
           </StackPanel>
-          <TextBlock Text="{Binding EventText}" Classes="hint" TextWrapping="Wrap"
-                     IsVisible="{Binding !NeedsEvent}" />
 
           <TextBlock Text="Noite" Classes="label" />
           <TextBox Text="{Binding SessionNameEntry}" />

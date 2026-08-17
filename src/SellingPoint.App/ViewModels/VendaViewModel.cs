@@ -289,16 +289,43 @@ public partial class VendaViewModel : ViewModelBase
     [ObservableProperty] public partial bool NeedsEvent { get; set; }
     [ObservableProperty] public partial string EventText { get; set; } = "";
 
+    /// <summary>
+    /// Ticked to start a festival rather than join the one still open.
+    ///
+    /// This has to be offered, not assumed. Closing the last night of a festival
+    /// does not close the festival - it cannot, since nobody knows it was the last
+    /// - so a festival stays open until somebody says otherwise. Without a way to
+    /// say it, next August's first night would silently join last August's, and
+    /// every sale of the new festival would be reported under the old one.
+    /// </summary>
+    [ObservableProperty] public partial bool StartNewEvent { get; set; }
+
+    public bool AsksForEventName => NeedsEvent || StartNewEvent;
+
+    partial void OnNeedsEventChanged(bool value) => OnPropertyChanged(nameof(AsksForEventName));
+
+    partial void OnStartNewEventChanged(bool value)
+    {
+        OnPropertyChanged(nameof(AsksForEventName));
+        if (value) EventNameEntry = $"Festa {DateTime.Now:yyyy}";
+    }
+
     [RelayCommand]
     private void OpenSessionPanel()
     {
         SessionNameEntry = $"Sessão {DateTime.Now:dd/MM/yyyy}";
         SessionFloatEntry = "";
+        StartNewEvent = false;
 
         var festival = services.Sales.GetOpenEvent();
         NeedsEvent = festival is null;
         EventNameEntry = festival?.Name ?? $"Festa {DateTime.Now:yyyy}";
-        EventText = festival is null ? "" : $"Esta noite entra em «{festival.Name}».";
+
+        // The festival is named on screen even when nothing is being asked, so an
+        // old one still open is seen rather than joined by accident.
+        EventText = festival is null
+            ? ""
+            : $"Esta noite entra em «{festival.Name}», aberta em {festival.CreatedAt:dd/MM/yyyy}.";
 
         IsSessionPanelOpen = true;
     }
@@ -315,7 +342,7 @@ public partial class VendaViewModel : ViewModelBase
             return;
         }
 
-        if (NeedsEvent && string.IsNullOrWhiteSpace(EventNameEntry))
+        if (AsksForEventName && string.IsNullOrWhiteSpace(EventNameEntry))
         {
             StatusMessage = "Dê um nome à festa.";
             return;
@@ -329,9 +356,19 @@ public partial class VendaViewModel : ViewModelBase
         // and an exception out of a command handler takes the whole till with it.
         try
         {
-            var festival = NeedsEvent
-                ? services.Sales.OpenEvent(EventNameEntry.Trim(), DateTime.Now)
-                : services.Sales.GetOpenEvent();
+            Event? festival;
+
+            if (AsksForEventName)
+            {
+                // Starting one ends the one before it. Its nights are all closed -
+                // only one session can be open, and this is opening it - so there
+                // is nothing left to count in it.
+                if (services.Sales.GetOpenEvent() is { } previous)
+                    services.Sales.CloseEvent(previous.Id, DateTime.Now);
+
+                festival = services.Sales.OpenEvent(EventNameEntry.Trim(), DateTime.Now);
+            }
+            else festival = services.Sales.GetOpenEvent();
 
             services.Sales.OpenSession(SessionNameEntry.Trim(), floatCents, DateTime.Now, festival?.Id);
         }

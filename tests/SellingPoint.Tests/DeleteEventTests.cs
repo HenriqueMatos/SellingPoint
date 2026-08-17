@@ -165,7 +165,7 @@ public class DeleteEventTests
         Assert.False(relatorios.CanDeleteEvent);
 
         relatorios.DeleteEventCommand.Execute(null);
-        relatorios.DeleteEventCommand.Execute(null);
+        relatorios.ConfirmDeleteEventCommand.Execute(null);
 
         Assert.Single(t.Sales.GetEvents());
         Assert.Contains("Exporte", relatorios.StatusMessage);
@@ -207,9 +207,118 @@ public class DeleteEventTests
         Assert.True(relatorios.DeleteArmed);
         Assert.Single(t.Sales.GetEvents());
 
+        // Confirming is its own command on its own button, so a double tap on the
+        // first one cannot reach it.
         relatorios.DeleteEventCommand.Execute(null);
+        Assert.Single(t.Sales.GetEvents());
+
+        relatorios.ConfirmDeleteEventCommand.Execute(null);
         Assert.Empty(t.Sales.GetEvents());
         Assert.Equal(0, Count(t, "sale"));
+    }
+
+    [Fact]
+    public void It_says_what_is_still_on_the_disk_afterwards()
+    {
+        // The automatic copies are snapshots of the whole database, so one taken
+        // while the festival was running still holds all of it, and they sit in the
+        // app's own folder. Deleting the festival does not touch them - they are
+        // the way back if this was a mistake - so somebody clearing a shared
+        // computer has to be told they are there.
+        using var t = new TempDb();
+        var services = new AppServices(t.Path);
+        services.Print.Pause();
+        Festival(t, out _);
+
+        var relatorios = new RelatoriosViewModel(services);
+        relatorios.Load();
+        relatorios.SelectedSession = relatorios.Sessions.First(s => s.Event is not null);
+        relatorios.ExportForDeleteCommand.Execute(null);      // takes a copy
+        relatorios.DeleteEventCommand.Execute(null);
+        relatorios.ConfirmDeleteEventCommand.Execute(null);
+
+        Assert.Empty(t.Sales.GetEvents());
+        Assert.Contains("cópia(s) de segurança", relatorios.StatusMessage);
+        Assert.Contains(Path.GetDirectoryName(t.Path)!, relatorios.StatusMessage);
+    }
+
+    [Fact]
+    public void A_night_added_after_the_export_locks_the_delete_again()
+    {
+        // Found by attacking this rather than by it going wrong: export on Saturday,
+        // sell all day Sunday under the same festival, and an unlock keyed on the
+        // festival alone would still be good. Sunday would be deleted having never
+        // been written to any file.
+        using var t = new TempDb();
+        var services = new AppServices(t.Path);
+        services.Print.Pause();
+        var festival = Festival(t, out _);
+
+        var relatorios = new RelatoriosViewModel(services);
+        relatorios.Load();
+        relatorios.SelectedSession = relatorios.Sessions.First(s => s.Event is not null);
+        relatorios.ExportForDeleteCommand.Execute(null);
+        Assert.True(relatorios.CanDeleteEvent);
+
+        // Sunday.
+        var sunday = t.Sales.OpenSession("Domingo", 0, Friday.AddDays(2), festival.Id);
+        var cart = new Cart();
+        cart.Add(t.Catalog.GetProducts().First(p => p.Name == "Cerveja"), 400);
+        t.Sales.Save(
+            SaleFactory.Build(cart, t.Catalog.GetCategories().ToDictionary(c => c.Id),
+                PaymentMethod.Cash, 1_000_000, Friday.AddDays(2).AddHours(1)),
+            sunday.Id);
+        t.Sales.CloseSession(sunday.Id, 60_000, Friday.AddDays(2).AddHours(5));
+
+        relatorios.Load();
+        relatorios.SelectedSession = relatorios.Sessions.First(s => s.Event is not null);
+
+        Assert.False(relatorios.CanDeleteEvent);
+
+        relatorios.DeleteEventCommand.Execute(null);
+        Assert.Contains("cresceu", relatorios.StatusMessage);
+        Assert.Single(t.Sales.GetEvents());
+    }
+
+    [Fact]
+    public void Two_festivals_named_the_same_on_one_day_do_not_share_an_export()
+    {
+        // A duplicate created by mistake, or two festivals in a weekend, would
+        // otherwise write to one path and the second would replace the first - and
+        // the treasurer would keep a file they believed covered both.
+        using var t = new TempDb();
+        var services = new AppServices(t.Path);
+        services.Print.Pause();
+
+        // One name for both festivals, unique to this run: the reports folder is
+        // shared with every other test's exports, so a fixed name would collide
+        // with them rather than only with itself.
+        var name = $"Festa {Guid.NewGuid():N}";
+
+        foreach (var _ in new[] { 1, 2 })
+        {
+            var festival = t.Sales.OpenEvent(name, Friday);
+            var night = t.Sales.OpenSession("Sexta", 0, Friday, festival.Id);
+            t.Sales.CloseSession(night.Id, 0, Friday.AddHours(5));
+        }
+
+        var relatorios = new RelatoriosViewModel(services);
+        relatorios.Load();
+
+        foreach (var row in relatorios.Sessions.Where(s => s.Event is not null).ToList())
+        {
+            relatorios.SelectedSession = row;
+            relatorios.ExportForDeleteCommand.Execute(null);
+        }
+
+        // Two festivals, one name, one day: without the id in the filename the
+        // second export would replace the first and the treasurer would keep one
+        // file believing it covered both.
+        var folder = Path.Combine(Path.GetDirectoryName(t.Path)!, "relatórios");
+        var written = Directory.GetFiles(folder, $"{name}-*.csv");
+
+        Assert.Equal(2, written.Length);
+        Assert.All(written, f => Assert.True(new FileInfo(f).Length > 0, $"{f} está vazio"));
     }
 
     [Fact]
