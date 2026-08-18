@@ -49,6 +49,13 @@ public partial class VendaViewModel : ViewModelBase
     [ObservableProperty] public partial bool IsCashPanelOpen { get; set; }
     [ObservableProperty] public partial string CashEntry { get; set; } = "";
 
+    /// <summary>
+    /// Cartão asks too. It sits beside Dinheiro and used to complete the sale on
+    /// the tap itself - a thumb landing on the wrong one of two adjacent buttons
+    /// had already printed the slips and cleared the cart, with nothing to undo it.
+    /// </summary>
+    [ObservableProperty] public partial bool IsCardPanelOpen { get; set; }
+
     [ObservableProperty] public partial bool IsSessionPanelOpen { get; set; }
     [ObservableProperty] public partial string SessionNameEntry { get; set; } = "";
     [ObservableProperty] public partial string SessionFloatEntry { get; set; } = "";
@@ -145,6 +152,21 @@ public partial class VendaViewModel : ViewModelBase
 
     [RelayCommand]
     private void CloseCashPanel() => IsCashPanelOpen = false;
+
+    /// <summary>
+    /// Same guard as the cash panel: without a cart or a session there is nothing
+    /// to confirm, and an overlay with a live confirm button over an empty cart
+    /// spends a tap rather than taking one.
+    /// </summary>
+    [RelayCommand]
+    private void OpenCardPanel()
+    {
+        if (_cart.IsEmpty || !HasOpenSession) return;
+        IsCardPanelOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseCardPanel() => IsCardPanelOpen = false;
 
     /// <summary>Digits shift in from the right, so "1050" is 10,50 EUR - no decimal key.</summary>
     [RelayCommand]
@@ -247,7 +269,7 @@ public partial class VendaViewModel : ViewModelBase
     private void ConfirmCash() => Complete(PaymentMethod.Cash, CashReceivedCents);
 
     [RelayCommand]
-    private void PayCard() => Complete(PaymentMethod.Card, 0);
+    private void ConfirmCard() => Complete(PaymentMethod.Card, 0);
 
     [RelayCommand]
     private void ReprintLast()
@@ -427,6 +449,7 @@ public partial class VendaViewModel : ViewModelBase
 
         _cart.Clear();
         IsCashPanelOpen = false;
+        IsCardPanelOpen = false;
         CashEntry = "";
         CanReprint = true;
 

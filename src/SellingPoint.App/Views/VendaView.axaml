@@ -233,7 +233,7 @@
                         IsEnabled="{Binding CanPay}" Content="Dinheiro" />
                 <Button Grid.Column="1" Classes="card-pay" HorizontalAlignment="Stretch"
                         Height="{DynamicResource TapLarge}" FontSize="{DynamicResource TextTitle}"
-                        Margin="4,0,0,0" Command="{Binding PayCardCommand}"
+                        Margin="4,0,0,0" Command="{Binding OpenCardPanelCommand}"
                         IsEnabled="{Binding CanPay}" Content="Cartão" />
               </Grid>
             </StackPanel>
@@ -340,6 +340,55 @@
                     Command="{Binding ConfirmCashCommand}" IsEnabled="{Binding CanConfirmCash}" />
           </Grid>
         </Grid>
+      </Border>
+      </ScrollViewer>
+    </Grid>
+
+    <!--
+      Card overlay. Nothing to type - it only asks - so it is the cash panel with
+      the numpad and the change taken out. What matters is where the confirm sits:
+      bottom right of a full-screen overlay, nowhere near the Cartão button in the
+      column behind it, so the second half of a mis-tap cannot land on it.
+    -->
+    <Grid Background="#CC020617" IsVisible="{Binding IsCardPanelOpen}">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <Border Classes="overlay-card" MinWidth="520" Margin="16">
+        <StackPanel Spacing="14">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Grid.Column="0" Text="A pagar" FontSize="{DynamicResource TextLarge}"
+                       Foreground="{DynamicResource InkMuted}" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{Binding TotalText}"
+                       FontSize="{DynamicResource TextDisplay}" FontWeight="Bold" />
+          </Grid>
+
+          <!-- Blue, the same as the button that opened this, so the payment method
+               being confirmed is read at a glance rather than from the wording. -->
+          <Border Background="{DynamicResource Card}" CornerRadius="12" Padding="18,14">
+            <Grid ColumnDefinitions="*,Auto">
+              <!-- LineHeight because of the Ã: Avalonia's default line box clips an
+                   accent above cap height, so this reads CARTAO without it. The
+                   sibling TROCO badge needs none - it has no accent to lose. -->
+              <TextBlock Grid.Column="0" Text="CARTÃO" FontSize="{DynamicResource TextTitle}"
+                         LineHeight="38" FontWeight="Bold" Foreground="White"
+                         VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding TotalText}"
+                         FontSize="{DynamicResource TextHuge}" FontWeight="Bold" Foreground="White" />
+            </Grid>
+          </Border>
+
+          <TextBlock Classes="hint" TextWrapping="Wrap"
+                     Text="Cobre no terminal de cartão e só depois confirme aqui." />
+
+          <Grid ColumnDefinitions="*,*" Margin="0,6,0,0">
+            <Button Grid.Column="0" Content="Cancelar" Classes="quiet" Height="64"
+                    HorizontalAlignment="Stretch" Margin="0,0,6,0"
+                    Command="{Binding CloseCardPanelCommand}" />
+            <Button Grid.Column="1" Content="Confirmar e imprimir" Classes="card-pay" Height="64"
+                    HorizontalAlignment="Stretch" Margin="6,0,0,0"
+                    FontSize="{DynamicResource TextLarge}"
+                    Command="{Binding ConfirmCardCommand}" IsEnabled="{Binding CanPay}" />
+          </Grid>
+        </StackPanel>
       </Border>
       </ScrollViewer>
     </Grid>

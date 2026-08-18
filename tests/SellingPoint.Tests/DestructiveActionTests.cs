@@ -163,4 +163,78 @@ public class DestructiveActionTests
         diagnostics.Disarm();
         Assert.False(diagnostics.DiscardArmed);
     }
+
+    [Fact]
+    public void One_tap_on_card_does_not_ring_up_the_sale()
+    {
+        // Cartão sits beside Dinheiro and used to complete the sale on the tap
+        // itself: the slips were printed and the cart cleared before anyone could
+        // say the tap was meant for the button next to it.
+        using var t = new TempDb();
+        var services = new AppServices(t.Path);
+        services.Print.Pause();
+
+        var sessionId = services.Sales.OpenSession("Festa", 0, Evening).Id;
+        var venda = Till(services);
+
+        venda.OpenCardPanelCommand.Execute(null);
+
+        Assert.True(venda.IsCardPanelOpen);
+        Assert.Null(t.Sales.GetLastSale(sessionId));
+        Assert.Equal(0, services.Print.PendingCount);
+
+        venda.ConfirmCardCommand.Execute(null);
+
+        Assert.False(venda.IsCardPanelOpen);
+        Assert.Equal(PaymentMethod.Card, t.Sales.GetLastSale(sessionId)!.PaymentMethod);
+    }
+
+    [Fact]
+    public void Cancelling_the_card_panel_leaves_the_cart_alone()
+    {
+        // The mis-tap this exists for: the volunteer meant Dinheiro, so the cart
+        // has to still be there to pay for a second time.
+        using var t = new TempDb();
+        var services = new AppServices(t.Path);
+        services.Print.Pause();
+
+        var sessionId = services.Sales.OpenSession("Festa", 0, Evening).Id;
+        var venda = Till(services);
+        var total = venda.TotalText;
+
+        venda.OpenCardPanelCommand.Execute(null);
+        venda.CloseCardPanelCommand.Execute(null);
+
+        Assert.False(venda.IsCardPanelOpen);
+        Assert.Null(t.Sales.GetLastSale(sessionId));
+        Assert.False(venda.IsCartEmpty);
+        Assert.Equal(total, venda.TotalText);
+    }
+
+    [Fact]
+    public void The_card_panel_does_not_open_on_an_empty_cart()
+    {
+        // Nothing to confirm, and an overlay with a live "Confirmar e imprimir"
+        // over an empty cart is a way to lose a tap rather than to spend one.
+        using var t = new TempDb();
+        var services = new AppServices(t.Path);
+        services.Print.Pause();
+        services.Sales.OpenSession("Festa", 0, Evening);
+
+        var venda = new VendaViewModel(services);
+        venda.Load();
+
+        venda.OpenCardPanelCommand.Execute(null);
+
+        Assert.False(venda.IsCardPanelOpen);
+    }
+
+    /// <summary>A till with one product in the cart, ready to be paid for.</summary>
+    private static VendaViewModel Till(AppServices services)
+    {
+        var venda = new VendaViewModel(services);
+        venda.Load();
+        venda.Products.First().PressCommand.Execute(null);
+        return venda;
+    }
 }
