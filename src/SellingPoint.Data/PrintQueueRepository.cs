@@ -17,7 +17,6 @@ public sealed class PrintJob
     public DateTime CreatedAt { get; set; }
     public int Attempts { get; set; }
     public string? LastError { get; set; }
-    public DateTime? PrintedAt { get; set; }
 }
 
 /// <summary>
@@ -84,13 +83,6 @@ public sealed class PrintQueueRepository(Db db)
         using var c = db.Open();
         c.Execute("UPDATE print_job SET attempts = attempts + 1, last_error = @error WHERE id = @id",
             new { id, error });
-    }
-
-    /// <summary>Give up on one slip - a duplicate, or something already handed over by hand.</summary>
-    public void Discard(int id)
-    {
-        using var c = db.Open();
-        c.Execute("DELETE FROM print_job WHERE id = @id", new { id });
     }
 
     public int DiscardPending()

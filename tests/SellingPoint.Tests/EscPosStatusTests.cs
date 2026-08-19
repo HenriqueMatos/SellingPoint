@@ -47,7 +47,6 @@ public class EscPosStatusTests
         var status = EscPosStatus.Query(new FakePrinter(new() { [1] = Ok, [4] = Ok | 0x60 }));
 
         Assert.Equal(PrinterState.PaperOut, status.State);
-        Assert.True(status.NeedsAttention);
         Assert.False(status.CanPrint);
     }
 

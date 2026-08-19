@@ -45,13 +45,6 @@ public enum TicketFontSize
 /// </summary>
 public static class PaperFormat
 {
-    /// <summary>The sizes offered, smallest letters first. Drives the settings list.</summary>
-    public static IReadOnlyList<TicketFontSize> InSizeOrder =>
-    [
-        TicketFontSize.Small, TicketFontSize.Normal, TicketFontSize.Medium,
-        TicketFontSize.Large, TicketFontSize.Huge
-    ];
-
     /// <summary>Dots across the printable area. 203 dpi is 8 dots to the millimetre.</summary>
     public static int PrintableDots(PaperWidth paper) => paper == PaperWidth.Wide ? 576 : 384;
 

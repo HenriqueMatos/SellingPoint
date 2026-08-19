@@ -27,6 +27,10 @@ public class CashMovementTests
             sessionId);
     }
 
+    /// <summary>The movements of a night, read the way the closing report reads them.</summary>
+    private static IReadOnlyList<CashMovement> Movements(TempDb t, int sessionId) =>
+        new ReportRepository(t.Db).Build(t.Sales.GetSessions().Single(s => s.Id == sessionId)).CashMovements;
+
     [Fact]
     public void Money_carried_out_is_not_expected_back_in_the_box()
     {
@@ -94,7 +98,7 @@ public class CashMovementTests
         var report = new ReportRepository(t.Db).Build(t.Sales.GetSessions().Single());
 
         Assert.Equal(2000, report.ExpectedCashCents);
-        Assert.False(report.CashMovements.Single().IsWithdrawal);
+        Assert.Equal(2000, report.CashMovements.Single().Cents);
     }
 
     [Fact]
@@ -108,7 +112,7 @@ public class CashMovementTests
         t.Sales.RecordCashMovement(session.Id, -5000, "Levado ao carro", Evening.AddHours(2));
         t.Sales.RecordCashMovement(session.Id, -3000, "Pago ao fornecedor do gelo", Evening.AddHours(3));
 
-        var movements = t.Sales.GetCashMovements(session.Id);
+        var movements = Movements(t, session.Id);
 
         Assert.Equal(2, movements.Count);
         Assert.Equal("Levado ao carro", movements[0].Reason);
@@ -144,7 +148,7 @@ public class CashMovementTests
         relatorios.WithdrawalReason = "Levado ao carro";
         relatorios.RecordWithdrawalCommand.Execute(null);
 
-        var movement = Assert.Single(t.Sales.GetCashMovements(t.Sales.GetSessions().Single().Id));
+        var movement = Assert.Single(Movements(t, t.Sales.GetSessions().Single().Id));
 
         // Typed as a positive number, stored as money going out.
         Assert.Equal(-20_000, movement.Cents);
@@ -168,7 +172,7 @@ public class CashMovementTests
             relatorios.RecordWithdrawalCommand.Execute(null);
 
             Assert.Contains("quanto saiu", relatorios.StatusMessage);
-            Assert.Empty(t.Sales.GetCashMovements(t.Sales.GetSessions().Single().Id));
+            Assert.Empty(Movements(t, t.Sales.GetSessions().Single().Id));
         }
     }
 
@@ -188,7 +192,7 @@ public class CashMovementTests
         relatorios.RecordWithdrawalCommand.Execute(null);
 
         Assert.Contains("sessão aberta", relatorios.StatusMessage);
-        Assert.Empty(t.Sales.GetCashMovements(session.Id));
+        Assert.Empty(Movements(t, session.Id));
     }
 
     [Fact]

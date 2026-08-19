@@ -164,7 +164,10 @@ public class PrintServiceTests
         service.EnqueueText("TESTE", ["linha"]);
 
         await WaitUntil(() => service.Status.State == PrinterState.PaperOut, "the paper-out status");
-        Assert.True(service.Status.NeedsAttention);
+
+        // Read again after the wait: out of paper has to stay reported, not be a
+        // single poll the WaitUntil happened to catch.
+        Assert.Equal(PrinterState.PaperOut, service.Status.State);
         Assert.Equal(1, service.PendingCount);
 
         transport.IsOutOfPaper = false;

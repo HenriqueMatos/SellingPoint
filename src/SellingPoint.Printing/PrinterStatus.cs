@@ -24,9 +24,6 @@ public sealed record PrinterStatus(PrinterState State, string Message)
     /// </summary>
     public bool CanPrint => State is PrinterState.Ready or PrinterState.PaperLow or PrinterState.Unknown;
 
-    /// <summary>Something the operator can fix, as opposed to a connection problem.</summary>
-    public bool NeedsAttention => State is PrinterState.PaperOut or PrinterState.CoverOpen or PrinterState.Error;
-
     public static readonly PrinterStatus Unknown = new(PrinterState.Unknown, "Estado desconhecido");
     public static readonly PrinterStatus NotSupported = new(PrinterState.Unknown, "Esta ligação não permite consultar o estado");
 }

@@ -122,12 +122,6 @@ public sealed class SalesRepository(Db db)
         tx.Commit();
     }
 
-    public void RenameEvent(int eventId, string name)
-    {
-        using var c = db.Open();
-        c.Execute("UPDATE event SET name = @name WHERE id = @eventId", new { name, eventId });
-    }
-
     public List<Session> GetSessions(int eventId)
     {
         using var c = db.Open();
@@ -186,14 +180,6 @@ public sealed class SalesRepository(Db db)
         {
             Id = id, SessionId = sessionId, Cents = cents, Reason = reason, CreatedAt = now
         };
-    }
-
-    public List<CashMovement> GetCashMovements(int sessionId)
-    {
-        using var c = db.Open();
-        return c.Query<CashMovement>(
-            "SELECT * FROM cash_movement WHERE session_id = @sessionId ORDER BY id",
-            new { sessionId }).AsList();
     }
 
     public void CloseSession(int sessionId, int countedCents, DateTime now)

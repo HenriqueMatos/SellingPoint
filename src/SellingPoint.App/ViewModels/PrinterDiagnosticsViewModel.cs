@@ -20,7 +20,6 @@ public sealed class PortProbeViewModel(PortProbe probe)
 {
     public string PortName => probe.PortName;
     public string Message => probe.Message;
-    public bool IsPrinter => probe.AnsweredAsPrinter;
     public IBrush Marker => probe.AnsweredAsPrinter ? Brushes.MediumSeaGreen : Brushes.Gray;
 }
 
@@ -206,8 +205,6 @@ public partial class PrinterDiagnosticsViewModel : ViewModelBase
     }
 
     private void OnPrintServiceChanged() => Dispatcher.UIThread.Post(Refresh);
-
-    public void Detach() => _services.Print.Changed -= OnPrintServiceChanged;
 
     private static IBrush Colour(PrinterStatus status) => status.State switch
     {

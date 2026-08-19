@@ -27,7 +27,7 @@ public class NoOverflowTests
     private static IEnumerable<TicketOptions> AllCombinations()
     {
         foreach (var paper in new[] { PaperWidth.Wide, PaperWidth.Narrow })
-        foreach (var font in PaperFormat.InSizeOrder)
+        foreach (var font in Enum.GetValues<TicketFontSize>())
         foreach (var rules in new[] { true, false })
         foreach (var date in new[] { true, false })
         foreach (var total in new[] { true, false })

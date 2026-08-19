@@ -60,6 +60,5 @@ public static class SettingKeys
     public const string FoldAccents = "fold_accents";
     public const string OpenCashDrawer = "open_cash_drawer";
     public const string PrintSummarySlip = "print_summary_slip";
-    public const string AdminPin = "admin_pin";
     public const string CodePage = "code_page";
 }
