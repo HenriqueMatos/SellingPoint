@@ -1,3 +1,4 @@
+using Avalonia.Media;
 using SellingPoint.App;
 using SellingPoint.App.ViewModels;
 
@@ -179,5 +180,45 @@ public class GestaoViewModelTests
         using var f = new Fixture();
 
         Assert.All(f.Vm.ProductFilters, x => Assert.NotNull(x.Background));
+    }
+
+    [Fact]
+    public void The_picker_stores_six_hex_digits_and_cancelling_puts_the_old_colour_back()
+    {
+        // Color.ToString() would give "#ff0ab42c", or the *name* of a known colour,
+        // and what is stored here is read straight back into a Background binding.
+        //
+        // The round trip matters as much as the format: the picker binds two-way,
+        // so a colour that does not come back out of the string exactly as it went
+        // in would fight every drag of the spectrum.
+        using var f = new Fixture();
+        f.Vm.SelectedCategory = f.Vm.CategoryRows.Single(c => c.Name == "Bebidas");
+        var original = f.Vm.CategoryColor;
+
+        f.Vm.OpenColorPickerCommand.Execute(null);
+        f.Vm.PickerColor = Color.FromRgb(0x0A, 0xB4, 0x2C);
+
+        Assert.Equal("#0AB42C", f.Vm.CategoryColor);
+        Assert.Equal(Color.FromRgb(0x0A, 0xB4, 0x2C), f.Vm.PickerColor);
+
+        f.Vm.CancelColorPickerCommand.Execute(null);
+
+        Assert.Equal(original, f.Vm.CategoryColor);
+        Assert.False(f.Vm.IsColorPickerOpen);
+    }
+
+    [Fact]
+    public void A_colour_the_old_text_box_let_through_opens_the_picker_rather_than_throwing()
+    {
+        // Older versions took whatever was typed. Those rows are still out there,
+        // and the picker has to open on something.
+        using var f = new Fixture();
+        f.Vm.SelectedCategory = f.Vm.CategoryRows.Single(c => c.Name == "Comida");
+        f.Vm.CategoryColor = "azul-escuro";
+
+        f.Vm.OpenColorPickerCommand.Execute(null);
+
+        Assert.Equal(Colors.SteelBlue, f.Vm.PickerColor);
+        Assert.NotNull(f.Vm.PreviewBrush);
     }
 }

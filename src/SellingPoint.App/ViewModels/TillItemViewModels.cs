@@ -34,7 +34,12 @@ public static class CategoryPalette
 
     public static IBrush Flat(string? hex) => new SolidColorBrush(Parse(hex));
 
-    private static Color Parse(string? hex)
+    /// <summary>
+    /// Tolerant on purpose, and public because the colour picker in Gestão opens
+    /// on whatever is stored - including the hand-typed values older versions let
+    /// through, which have to land somewhere rather than throw.
+    /// </summary>
+    public static Color Parse(string? hex)
     {
         try
         {

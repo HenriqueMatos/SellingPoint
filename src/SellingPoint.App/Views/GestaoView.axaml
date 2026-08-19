@@ -13,8 +13,34 @@
       <Setter Property="FontSize" Value="{DynamicResource TextBody}" />
       <Setter Property="Padding" Value="16,10" />
     </Style>
+
+    <!--
+      The colour picker's own tab strip is a TabItem too, so both the style above
+      and the app-wide one in Controls.axaml land on it - and a Style outranks the
+      ControlTheme the picker ships with. Its template pins the strip to a 48px
+      band, so put back what that band expects. Declared after the style it undoes,
+      which is what makes it win.
+    -->
+    <Style Selector="ColorView /template/ TabItem">
+      <Setter Property="MinHeight" Value="48" />
+      <Setter Property="Padding" Value="6,0" />
+      <Setter Property="FontSize" Value="{DynamicResource TextBody}" />
+    </Style>
+
+    <!--
+      The picker hard-codes 350x338 inside its own template, and nothing set on the
+      ColorView element moves it. The spectrum and the hue slider both stretch, so
+      resizing the part is what makes them finger-sized. Two numbers to tune on the
+      real screen.
+    -->
+    <Style Selector="ColorView /template/ TabControl#PART_TabControl">
+      <Setter Property="Width" Value="480" />
+      <Setter Property="Height" Value="420" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
   </UserControl.Styles>
 
+  <Grid>
   <Grid RowDefinitions="*,Auto">
     <TabControl Grid.Row="0" Margin="8,4,8,0">
 
@@ -48,12 +74,25 @@
                 <TextBlock Text="Nome" Classes="label" />
                 <TextBox Text="{Binding CategoryName}" FontSize="16" />
 
-                <TextBlock Text="Cor do botão" Classes="label" />
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBox Grid.Column="0" Text="{Binding CategoryColor}" FontSize="16" />
-                  <Border Grid.Column="1" Width="48" Margin="8,0,0,0" CornerRadius="6"
-                          Background="{Binding CategoryColor}" />
-                </Grid>
+                <!--
+                  One tappable row rather than a hex box beside a swatch. Typing a
+                  colour meant knowing that #3A7BD5 is a blue, and a typo was
+                  accepted and only fell back to steel blue later, out on the till
+                  where nobody connects it to what they typed.
+                -->
+                <TextBlock Text="Cor do botão" Classes="label" LineHeight="24" />
+                <Button Height="{DynamicResource TapMedium}" Padding="8"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                        Command="{Binding OpenColorPickerCommand}">
+                  <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Border Grid.Column="0" Width="72" CornerRadius="6"
+                            Background="{Binding PreviewBrush}" />
+                    <TextBlock Grid.Column="1" Text="{Binding CategoryColor}" Margin="14,0,0,0"
+                               VerticalAlignment="Center" FontSize="16" />
+                    <TextBlock Grid.Column="2" Text="›" Margin="0,0,6,0" FontSize="20"
+                               VerticalAlignment="Center" Foreground="{DynamicResource InkMuted}" />
+                  </Grid>
+                </Button>
 
                 <TextBlock Text="Grupo de impressão" Classes="label" />
                 <ComboBox ItemsSource="{Binding PrintGroups}" SelectedItem="{Binding CategoryPrintGroup}"
@@ -191,5 +230,56 @@
     <Border Grid.Row="1" Padding="20,12" Background="{DynamicResource Surface1}" BorderBrush="{DynamicResource LineSoft}" BorderThickness="0,1,0,0">
       <TextBlock Text="{Binding StatusMessage}" FontSize="14" />
     </Border>
+  </Grid>
+
+  <!--
+    The colour picker. Same shape as the overlays in Venda - full-screen scrim,
+    one card, cancel bottom left and confirm bottom right - so it behaves like
+    everything else that covers the screen. Cancel puts the old colour back;
+    neither button writes to the database, Guardar does that.
+  -->
+  <Grid Background="#CC020617" IsVisible="{Binding IsColorPickerOpen}">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <Border Classes="overlay-card" Margin="16">
+        <StackPanel Spacing="14">
+          <TextBlock Text="Cor do botão" FontSize="{DynamicResource TextTitle}"
+                     LineHeight="38" FontWeight="Bold" />
+
+          <ColorView Color="{Binding PickerColor, Mode=TwoWay}"
+                     IsAlphaEnabled="False"
+                     IsAlphaVisible="False"
+                     IsColorPaletteVisible="False"
+                     IsColorComponentsVisible="False"
+                     IsColorPreviewVisible="False"
+                     HorizontalAlignment="Center" />
+
+          <!--
+            Not a swatch: the product button as the till draws it, same gradient
+            and the same white text. A colour nobody can read at arm's length in
+            the dark is caught here rather than on the night.
+          -->
+          <Border Background="{Binding PreviewBrush}" Height="96" Padding="16"
+                  CornerRadius="{DynamicResource RadiusMedium}">
+            <StackPanel VerticalAlignment="Center">
+              <TextBlock Text="{Binding CategoryName}" Foreground="White" LineHeight="32"
+                         FontSize="{DynamicResource TextLarge}" FontWeight="SemiBold" />
+              <TextBlock Text="1,50 €" Foreground="White" FontWeight="Bold"
+                         FontSize="{DynamicResource TextTitle}" LineHeight="38" />
+            </StackPanel>
+          </Border>
+
+          <Grid ColumnDefinitions="*,*" Margin="0,6,0,0">
+            <Button Grid.Column="0" Content="Cancelar" Classes="quiet" Height="64"
+                    HorizontalAlignment="Stretch" Margin="0,0,6,0"
+                    Command="{Binding CancelColorPickerCommand}" />
+            <Button Grid.Column="1" Content="Usar esta cor" Classes="primary" Height="64"
+                    HorizontalAlignment="Stretch" Margin="6,0,0,0"
+                    FontSize="{DynamicResource TextLarge}"
+                    Command="{Binding ConfirmColorPickerCommand}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+    </ScrollViewer>
+  </Grid>
   </Grid>
 </UserControl>

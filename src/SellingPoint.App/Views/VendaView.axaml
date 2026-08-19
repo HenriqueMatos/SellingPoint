@@ -29,17 +29,6 @@
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
-    <Style Selector="Border.overlay-card">
-      <Setter Property="Background" Value="{DynamicResource Surface1}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource Line}" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="{DynamicResource RadiusLarge}" />
-      <Setter Property="Padding" Value="28" />
-      <Setter Property="MinWidth" Value="460" />
-      <Setter Property="HorizontalAlignment" Value="Center" />
-      <Setter Property="VerticalAlignment" Value="Center" />
-      <Setter Property="BoxShadow" Value="0 24 64 0 #99000000" />
-    </Style>
   </UserControl.Styles>
 
   <Grid>
@@ -72,8 +61,7 @@
                   Command="{Binding OpenSessionPanelCommand}" />
 
           <ToggleButton Grid.Column="4" Content="Ver talão" Padding="16,10"
-                        CornerRadius="6" IsChecked="{Binding IsPreviewVisible}"
-                        Command="{Binding TogglePreviewCommand}" />
+                        CornerRadius="6" IsChecked="{Binding IsPreviewVisible}" />
         </Grid>
       </Border>
 

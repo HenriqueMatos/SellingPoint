@@ -298,12 +298,11 @@ public partial class VendaViewModel : ViewModelBase
     [RelayCommand]
     private void CloseDiagnostics() => IsDiagnosticsOpen = false;
 
-    [RelayCommand]
-    private void TogglePreview()
-    {
-        IsPreviewVisible = !IsPreviewVisible;
-        RefreshPreview();
-    }
+    // Bound straight to the Ver talão toggle. The refresh hangs off the property
+    // rather than off a command, because a ToggleButton flips IsChecked itself
+    // before it runs any command bound beside it - so a command that toggled the
+    // same boolean undid the click that called it, and the panel never opened.
+    partial void OnIsPreviewVisibleChanged(bool value) => RefreshPreview();
 
     // Which festival tonight belongs to. Asked once per festival, not once per
     // night: with one already running the night joins it and nobody is asked.

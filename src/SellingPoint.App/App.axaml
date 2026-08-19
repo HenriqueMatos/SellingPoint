@@ -13,6 +13,11 @@
 
     <Application.Styles>
         <FluentTheme />
+        <!-- ColorView's control theme ships inside its own package and FluentTheme
+             does not carry it. It is a Styles document, not a ResourceDictionary,
+             so it goes here rather than in Application.Resources above; without
+             this line the picker renders as an empty box. -->
+        <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
         <StyleInclude Source="/Styles/Controls.axaml" />
     </Application.Styles>
 </Application>

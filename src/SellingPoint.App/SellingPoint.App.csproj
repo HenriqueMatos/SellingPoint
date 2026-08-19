@@ -24,6 +24,9 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.1.1" />
+    <!-- ColorView, for picking a category's colour by looking at colours rather
+         than by typing a hex string. Not part of the base Avalonia package. -->
+    <PackageReference Include="Avalonia.Controls.ColorPicker" Version="12.1.1" />
     <PackageReference Include="Avalonia.Desktop" Version="12.1.1" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1" />
     <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3">

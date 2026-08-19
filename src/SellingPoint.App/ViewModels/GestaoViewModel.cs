@@ -91,9 +91,56 @@ public partial class GestaoViewModel(AppServices services) : ViewModelBase
     // --- category form -------------------------------------------------------
     [ObservableProperty] public partial CategoryRowViewModel? SelectedCategory { get; set; }
     [ObservableProperty] public partial string CategoryName { get; set; } = "";
-    [ObservableProperty] public partial string CategoryColor { get; set; } = "#3A7BD5";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PickerColor))]
+    [NotifyPropertyChangedFor(nameof(PreviewBrush))]
+    public partial string CategoryColor { get; set; } = "#3A7BD5";
+
+    /// <summary>
+    /// The picker speaks Color, the database speaks "#RRGGBB". Computed both ways
+    /// off CategoryColor so there is never a second copy of the colour to drift
+    /// out of step. Six digits and not eight: Color.ToString() gives "#ffrrggbb",
+    /// or the *name* of a known colour, and neither belongs in the column.
+    /// </summary>
+    public Color PickerColor
+    {
+        get => CategoryPalette.Parse(CategoryColor);
+        set => CategoryColor = $"#{value.R:X2}{value.G:X2}{value.B:X2}";
+    }
+
+    /// <summary>The product button as the till will actually draw it.</summary>
+    public IBrush PreviewBrush => CategoryPalette.Gradient(CategoryColor);
+
     [ObservableProperty] public partial string CategoryPrintGroup { get; set; } = "Bar";
     [ObservableProperty] public partial bool CategoryPerUnit { get; set; }
+
+    // --- colour picker -------------------------------------------------------
+    [ObservableProperty] public partial bool IsColorPickerOpen { get; set; }
+
+    /// <summary>Cancel has to put back what was there. One string is the whole undo stack.</summary>
+    private string _colorBeforePicking = "#3A7BD5";
+
+    [RelayCommand]
+    private void OpenColorPicker()
+    {
+        _colorBeforePicking = CategoryColor;
+        IsColorPickerOpen = true;
+    }
+
+    /// <summary>
+    /// Closes on the chosen colour. It is not saved here - Guardar commits it with
+    /// the rest of the form, the same as every other field on this screen.
+    /// </summary>
+    [RelayCommand]
+    private void ConfirmColorPicker() => IsColorPickerOpen = false;
+
+    [RelayCommand]
+    private void CancelColorPicker()
+    {
+        CategoryColor = _colorBeforePicking;
+        IsColorPickerOpen = false;
+    }
 
     // --- product form --------------------------------------------------------
     [ObservableProperty] public partial ProductRowViewModel? SelectedProduct { get; set; }
@@ -173,8 +220,11 @@ public partial class GestaoViewModel(AppServices services) : ViewModelBase
     partial void OnSelectedCategoryChanged(CategoryRowViewModel? value)
     {
         // Moving to a different row cancels an armed delete: the button would
-        // otherwise still be aimed at whatever was selected a moment ago.
+        // otherwise still be aimed at whatever was selected a moment ago. The
+        // picker closes for the same reason - left open, it would be sitting over
+        // one category showing another one's colour.
         CategoryDeleteArmed = false;
+        IsColorPickerOpen = false;
 
         if (value is null) return;
 

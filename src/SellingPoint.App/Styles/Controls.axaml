@@ -36,6 +36,23 @@
     <Setter Property="Padding" Value="12" />
   </Style>
 
+  <!--
+    The card an overlay puts in the middle of the screen, over a #CC020617 scrim.
+    Sites set their own MinWidth where they need a wider one - a local value on
+    the element still beats a setter here.
+  -->
+  <Style Selector="Border.overlay-card">
+    <Setter Property="Background" Value="{DynamicResource Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Line}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusLarge}" />
+    <Setter Property="Padding" Value="28" />
+    <Setter Property="MinWidth" Value="460" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="BoxShadow" Value="0 24 64 0 #99000000" />
+  </Style>
+
   <!-- Labels -->
   <Style Selector="TextBlock.label">
     <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
