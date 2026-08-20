@@ -201,18 +201,35 @@
             </Border>
 
             <StackPanel Grid.Row="3" Spacing="8">
-              <Grid ColumnDefinitions="*,*,*">
+              <!--
+                Two rows of two rather than one row of four. The cart panel is 400px
+                wide: split four ways, a button has 47px of room for its label, and
+                "Reimprimir" needs 74 - the Fluent template clips it to "Reimpr",
+                which reads as a deliberate abbreviation and would never be reported
+                as broken.
+              -->
+              <Grid ColumnDefinitions="*,*">
                 <Button Grid.Column="0" Content="Limpar" Classes="quiet" HorizontalAlignment="Stretch"
                         Height="{DynamicResource TapSmall}" Margin="0,0,3,0"
                         Command="{Binding ClearCartCommand}" IsEnabled="{Binding !IsCartEmpty}" />
                 <Button Grid.Column="1" Content="Reimprimir" Classes="quiet" HorizontalAlignment="Stretch"
-                        Height="{DynamicResource TapSmall}" Margin="3,0,3,0"
+                        Height="{DynamicResource TapSmall}" Margin="3,0,0,0"
                         Command="{Binding ReprintLastCommand}" IsEnabled="{Binding CanReprint}" />
+              </Grid>
+              <Grid ColumnDefinitions="*,*">
                 <!-- Someone holding a slip from an hour ago. Reprint only ever
                      reached the last sale. -->
-                <Button Grid.Column="2" Content="Procurar" Classes="quiet" HorizontalAlignment="Stretch"
-                        Height="{DynamicResource TapSmall}" Margin="3,0,0,0"
+                <Button Grid.Column="0" Content="Procurar" Classes="quiet" HorizontalAlignment="Stretch"
+                        Height="{DynamicResource TapSmall}" Margin="0,0,3,0"
                         Command="{Binding OpenTicketSearchCommand}" IsEnabled="{Binding HasOpenSession}" />
+                <!-- Up here rather than beside Dinheiro and Cartão on purpose: an
+                     offer is a handful a night, and a third button the size of the
+                     paying ones is a third of the row a fast thumb can land on by
+                     mistake - a mistake that takes the money instead of asking for
+                     it. -->
+                <Button Grid.Column="1" Content="Oferta" Classes="offer" HorizontalAlignment="Stretch"
+                        Height="{DynamicResource TapSmall}" Margin="3,0,0,0"
+                        Command="{Binding OpenOfferPanelCommand}" IsEnabled="{Binding CanPay}" />
               </Grid>
               <Grid ColumnDefinitions="*,*">
                 <Button Grid.Column="0" Classes="primary" HorizontalAlignment="Stretch"
@@ -375,6 +392,49 @@
                     HorizontalAlignment="Stretch" Margin="6,0,0,0"
                     FontSize="{DynamicResource TextLarge}"
                     Command="{Binding ConfirmCardCommand}" IsEnabled="{Binding CanPay}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+      </ScrollViewer>
+    </Grid>
+
+    <!--
+      Offer overlay. The card panel with the money turned around: it shows what is
+      being given away rather than what is owed, and says so before printing, since
+      this is the sale nobody can tell was wrong by counting the drawer afterwards.
+    -->
+    <Grid Background="#CC020617" IsVisible="{Binding IsOfferPanelOpen}">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <Border Classes="overlay-card" MinWidth="520" Margin="16">
+        <StackPanel Spacing="14">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Grid.Column="0" Text="Valor oferecido" FontSize="{DynamicResource TextLarge}"
+                       Foreground="{DynamicResource InkMuted}" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{Binding TotalText}"
+                       FontSize="{DynamicResource TextDisplay}" FontWeight="Bold" />
+          </Grid>
+
+          <!-- Amber, the same as the button that opened this. -->
+          <Border Background="{DynamicResource Warning}" CornerRadius="12" Padding="18,14">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="OFERTA" FontSize="{DynamicResource TextTitle}"
+                         FontWeight="Bold" Foreground="White" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="0,00 €"
+                         FontSize="{DynamicResource TextHuge}" FontWeight="Bold" Foreground="White" />
+            </Grid>
+          </Border>
+
+          <TextBlock Classes="hint" TextWrapping="Wrap" LineHeight="26"
+                     Text="Não recebe nada. As senhas saem à mesma e o stock desce, e o valor aparece no relatório como oferta." />
+
+          <Grid ColumnDefinitions="*,*" Margin="0,6,0,0">
+            <Button Grid.Column="0" Content="Cancelar" Classes="quiet" Height="64"
+                    HorizontalAlignment="Stretch" Margin="0,0,6,0"
+                    Command="{Binding CloseOfferPanelCommand}" />
+            <Button Grid.Column="1" Content="Oferecer e imprimir" Classes="offer-pay" Height="64"
+                    HorizontalAlignment="Stretch" Margin="6,0,0,0"
+                    FontSize="{DynamicResource TextLarge}"
+                    Command="{Binding ConfirmOfferCommand}" IsEnabled="{Binding CanPay}" />
           </Grid>
         </StackPanel>
       </Border>

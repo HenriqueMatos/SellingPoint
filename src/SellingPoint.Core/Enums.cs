@@ -13,7 +13,15 @@ public enum SlipMode
 public enum PaymentMethod
 {
     Cash,
-    Card
+    Card,
+
+    /// <summary>
+    /// Handed over without being paid for - the band's beers, the mayor's coffee.
+    /// The sale is real: the slip prints, the stock moves and the night's units
+    /// count it. Only the money is absent, so it is summed apart from cash and
+    /// card and never reaches what the drawer is expected to hold.
+    /// </summary>
+    Offer
 }
 
 /// <summary>What the till does when a stock-tracked product hits zero.</summary>

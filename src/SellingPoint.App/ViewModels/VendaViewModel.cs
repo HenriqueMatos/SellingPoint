@@ -56,6 +56,12 @@ public partial class VendaViewModel : ViewModelBase
     /// </summary>
     [ObservableProperty] public partial bool IsCardPanelOpen { get; set; }
 
+    /// <summary>
+    /// Oferta asks too, and for the same reason as Cartão - more so, since this is
+    /// the one button whose mis-tap loses the money instead of collecting it.
+    /// </summary>
+    [ObservableProperty] public partial bool IsOfferPanelOpen { get; set; }
+
     [ObservableProperty] public partial bool IsSessionPanelOpen { get; set; }
     [ObservableProperty] public partial string SessionNameEntry { get; set; } = "";
     [ObservableProperty] public partial string SessionFloatEntry { get; set; } = "";
@@ -168,6 +174,16 @@ public partial class VendaViewModel : ViewModelBase
     [RelayCommand]
     private void CloseCardPanel() => IsCardPanelOpen = false;
 
+    [RelayCommand]
+    private void OpenOfferPanel()
+    {
+        if (_cart.IsEmpty || !HasOpenSession) return;
+        IsOfferPanelOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseOfferPanel() => IsOfferPanelOpen = false;
+
     /// <summary>Digits shift in from the right, so "1050" is 10,50 EUR - no decimal key.</summary>
     [RelayCommand]
     private void CashDigit(string digit) => CashEntry = (CashEntry + digit).TrimStart('0');
@@ -248,7 +264,12 @@ public partial class VendaViewModel : ViewModelBase
     private static string Describe(Sale sale)
     {
         var lines = sale.Lines.Select(l => $"{l.Qty}x {l.ProductName}   {Money.Format(l.LineTotalCents)}");
-        var method = sale.PaymentMethod == PaymentMethod.Cash ? "dinheiro" : "cartão";
+        var method = sale.PaymentMethod switch
+        {
+            PaymentMethod.Cash => "dinheiro",
+            PaymentMethod.Offer => "oferta",
+            _ => "cartão"
+        };
 
         return $"{TicketBuilder.Reference(sale.TicketNumber)} — {sale.CreatedAt:HH:mm}, {method}\n"
                + string.Join('\n', lines)
@@ -270,6 +291,9 @@ public partial class VendaViewModel : ViewModelBase
 
     [RelayCommand]
     private void ConfirmCard() => Complete(PaymentMethod.Card, 0);
+
+    [RelayCommand]
+    private void ConfirmOffer() => Complete(PaymentMethod.Offer, 0);
 
     [RelayCommand]
     private void ReprintLast()
@@ -444,11 +468,14 @@ public partial class VendaViewModel : ViewModelBase
             ? $" {services.Print.PendingCount} talões à espera da impressora."
             : "";
 
-        StatusMessage = $"Talão {reference} — {slips} senha(s).{change}{waiting}";
+        var offered = method == PaymentMethod.Offer ? " Oferta, sem cobrança." : "";
+
+        StatusMessage = $"Talão {reference} — {slips} senha(s).{offered}{change}{waiting}";
 
         _cart.Clear();
         IsCashPanelOpen = false;
         IsCardPanelOpen = false;
+        IsOfferPanelOpen = false;
         CashEntry = "";
         CanReprint = true;
 

@@ -23,8 +23,16 @@ Windows program, single file, no installer. Runs offline on one laptop.
   All in the app, no config files. Products are listed one category at a time,
   so you open Bebidas, see the six drinks you have, and add another without
   wading through everything else.
+- **Offer** — the band's beers, the mayor's coffee. `Oferta` rings the order up
+  without taking money: the senhas print, the stock comes down and the night's
+  units count it, and the slips say `OFERTA` so nobody at the bar waits for money
+  that is not coming. The value is reported apart from cash and card — you can see
+  what the night gave away — and, deliberately, is never expected in the drawer, so
+  the count at the end still adds up. The button sits with Limpar and Procurar
+  rather than beside Dinheiro and Cartão: it is used a handful of times a night,
+  and it is the one whose mis-tap loses the money instead of collecting it.
 - **Stock** — count down as things sell, warn or block at zero, log restocks.
-- **Close the night** — takings split cash vs card, per product, per category,
+- **Close the night** — takings split cash vs card (and offers, apart), per product, per category,
   expected cash against what was counted, stock left. CSV export, printed
   closing summary, automatic database backup.
 - **Add up the festival** — a festival runs several days, and each day is its own

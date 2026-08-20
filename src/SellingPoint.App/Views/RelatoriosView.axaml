@@ -55,7 +55,7 @@
           </Border>
 
           <Border Classes="panel cartao">
-            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto">
               <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,12,10">
                 <TextBlock Text="Vendas" Foreground="{DynamicResource InkMuted}" />
                 <TextBlock Text="{Binding SalesCountText}" FontSize="30" FontWeight="Bold" />
@@ -71,6 +71,15 @@
               <StackPanel Grid.Row="1" Grid.Column="1">
                 <TextBlock Text="Cartão" Foreground="{DynamicResource InkMuted}" />
                 <TextBlock Text="{Binding CardText}" FontSize="26" />
+              </StackPanel>
+              <!-- Below the line, and only when there were any: what was given away
+                   is not takings, and a night without offers should not carry a
+                   zero that invites the question. -->
+              <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,10,12,0"
+                          IsVisible="{Binding HasOffers}">
+                <TextBlock Text="Ofertas" Foreground="{DynamicResource InkMuted}" />
+                <TextBlock Text="{Binding OfferText}" FontSize="26"
+                           Foreground="{DynamicResource Money}" />
               </StackPanel>
             </Grid>
           </Border>

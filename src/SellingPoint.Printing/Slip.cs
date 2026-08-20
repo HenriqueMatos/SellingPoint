@@ -16,7 +16,8 @@ public sealed record GroupedSlip(
     DateTime CreatedAt,
     IReadOnlyList<SlipItem> Items,
     int TotalCents,
-    bool IsSummary = false) : Slip(PrintGroup, Reference, CreatedAt);
+    bool IsSummary = false,
+    bool IsOffer = false) : Slip(PrintGroup, Reference, CreatedAt);
 
 /// <summary>One unit, one slip - the senha the bar collects when it hands the item over.</summary>
 public sealed record SenhaSlip(
@@ -24,7 +25,8 @@ public sealed record SenhaSlip(
     string Reference,
     DateTime CreatedAt,
     string ItemName,
-    int PriceCents) : Slip(PrintGroup, Reference, CreatedAt);
+    int PriceCents,
+    bool IsOffer = false) : Slip(PrintGroup, Reference, CreatedAt);
 
 public enum SlipAlign
 {

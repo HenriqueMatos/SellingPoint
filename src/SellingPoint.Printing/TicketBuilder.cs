@@ -17,6 +17,11 @@ public static class TicketBuilder
         var reference = Reference(sale.TicketNumber);
         var senhaCounter = 0;
 
+        // Said on every piece of paper the sale produces, not just the customer's
+        // copy: whoever hands the item over at the bar is the one who would
+        // otherwise wait for money that is not coming.
+        var offer = sale.PaymentMethod == PaymentMethod.Offer;
+
         // GroupBy preserves the order the groups first appear in, so the same sale
         // always prints in the same order.
         foreach (var group in sale.Lines.GroupBy(l => l.PrintGroup))
@@ -27,7 +32,8 @@ public static class TicketBuilder
                 slips.Add(new GroupedSlip(
                     group.Key, reference, sale.CreatedAt,
                     grouped.Select(ToItem).ToList(),
-                    grouped.Sum(l => l.LineTotalCents)));
+                    grouped.Sum(l => l.LineTotalCents),
+                    IsOffer: offer));
             }
 
             // One slip per unit. The counter runs across the whole sale so no two
@@ -38,7 +44,7 @@ public static class TicketBuilder
                 {
                     slips.Add(new SenhaSlip(
                         group.Key, $"{reference}-{++senhaCounter}", sale.CreatedAt,
-                        line.ProductName, line.UnitPriceCents));
+                        line.ProductName, line.UnitPriceCents, offer));
                 }
             }
         }
@@ -49,7 +55,8 @@ public static class TicketBuilder
                 "", reference, sale.CreatedAt,
                 sale.Lines.Select(ToItem).ToList(),
                 sale.TotalCents,
-                IsSummary: true));
+                IsSummary: true,
+                IsOffer: offer));
         }
 
         return slips;

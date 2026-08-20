@@ -48,11 +48,12 @@ public class NoOverflowTests
         }
     }
 
-    private static Sale AwkwardSale() => new()
+    private static Sale AwkwardSale(PaymentMethod method = PaymentMethod.Cash) => new()
     {
         TicketNumber = 9999,
         CreatedAt = Now,
         TotalCents = 123456,
+        PaymentMethod = method,
         Lines = AwkwardNames.Select((name, i) => new SaleLine
         {
             ProductName = name,
@@ -68,12 +69,15 @@ public class NoOverflowTests
     [Fact]
     public void No_line_of_any_ticket_ever_exceeds_the_paper()
     {
-        var sale = AwkwardSale();
+        // Paid and given away both: an offer puts an extra line on every slip of
+        // the sale, so it walks the same grid rather than being assumed to fit.
+        Sale[] sales = [AwkwardSale(), AwkwardSale(PaymentMethod.Offer)];
         var checkedCombinations = 0;
 
         foreach (var options in AllCombinations())
         {
-            foreach (var slip in TicketBuilder.Build(sale, options with { PrintSummarySlip = true }))
+            foreach (var slip in sales.SelectMany(s =>
+                         TicketBuilder.Build(s, options with { PrintSummarySlip = true })))
             {
                 foreach (var line in SlipPreview.ToText(slip, options).Split(Environment.NewLine))
                 {

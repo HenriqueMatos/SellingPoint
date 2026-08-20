@@ -83,6 +83,10 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
     [ObservableProperty] public partial string SalesCountText { get; set; } = "0";
     [ObservableProperty] public partial string CashText { get; set; } = "";
     [ObservableProperty] public partial string CardText { get; set; } = "";
+
+    /// <summary>What was handed over without being paid for, at list price.</summary>
+    [ObservableProperty] public partial string OfferText { get; set; } = "";
+    [ObservableProperty] public partial bool HasOffers { get; set; }
     [ObservableProperty] public partial string TotalText { get; set; } = "";
     [ObservableProperty] public partial string FloatText { get; set; } = "";
     [ObservableProperty] public partial string ExpectedCashText { get; set; } = "";
@@ -254,6 +258,8 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
             session.OpeningFloatCents, report.ExpectedCashCents, report.CashMovements,
             report.CashMovementCents, report.Products, report.Categories);
 
+        ShowOffers(report.OfferCents);
+
         HasVariance = session.ClosingCountedCents is not null;
         CountedCashText = session.ClosingCountedCents is { } counted ? Money.Format(counted) : "—";
         VarianceText = Describe(report.VarianceCents);
@@ -276,6 +282,8 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
             report.FloatCents, report.ExpectedCashCents, report.CashMovements,
             report.CashMovementCents, report.Products, report.Categories);
 
+        ShowOffers(report.OfferCents);
+
         HasVariance = report.VarianceCents is not null;
         CountedCashText = Money.Format(report.CountedCashCents);
         VarianceText = Describe(report.VarianceCents);
@@ -291,6 +299,16 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
         };
 
         HasStock = false;
+    }
+
+    /// <summary>
+    /// Kept out of <see cref="Fill"/>: a report with no offers should show no
+    /// offers line at all, rather than a zero somebody has to interpret.
+    /// </summary>
+    private void ShowOffers(int offerCents)
+    {
+        HasOffers = offerCents != 0;
+        OfferText = Money.Format(offerCents);
     }
 
     private void Fill(int salesCount, int cash, int card, int total, int floatCents,
@@ -574,9 +592,14 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
             Layout.LeftRight("Vendas", report.SalesCount.ToString(), width),
             Layout.LeftRight("Dinheiro", Money.Format(report.CashCents), width),
             Layout.LeftRight("Cartão", Money.Format(report.CardCents), width),
-            Layout.LeftRight("TOTAL", Money.Format(report.TotalCents), width),
-            Layout.Rule('-', width)
+            Layout.LeftRight("TOTAL", Money.Format(report.TotalCents), width)
         };
+
+        // Under the total rather than in it: given away, not taken.
+        if (report.OfferCents != 0)
+            lines.Add(Layout.LeftRight("Ofertas", Money.Format(report.OfferCents), width));
+
+        lines.Add(Layout.Rule('-', width));
 
         foreach (var night in report.Nights)
         {
@@ -622,10 +645,15 @@ public partial class RelatoriosViewModel(AppServices services) : ViewModelBase
             Layout.LeftRight("Vendas", report.SalesCount.ToString(), width),
             Layout.LeftRight("Dinheiro", Money.Format(report.CashCents), width),
             Layout.LeftRight("Cartão", Money.Format(report.CardCents), width),
-            Layout.LeftRight("TOTAL", Money.Format(report.TotalCents), width),
-            Layout.Rule('-', width),
-            Layout.LeftRight("Fundo de caixa", Money.Format(report.Session.OpeningFloatCents), width)
+            Layout.LeftRight("TOTAL", Money.Format(report.TotalCents), width)
         };
+
+        // Under the total rather than in it: given away, not taken.
+        if (report.OfferCents != 0)
+            lines.Add(Layout.LeftRight("Ofertas", Money.Format(report.OfferCents), width));
+
+        lines.Add(Layout.Rule('-', width));
+        lines.Add(Layout.LeftRight("Fundo de caixa", Money.Format(report.Session.OpeningFloatCents), width));
 
         // Listed one by one, not just totalled: at two in the morning the question
         // is not how much left the drawer but who carried it and when.

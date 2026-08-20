@@ -12,6 +12,12 @@ namespace SellingPoint.Printing;
 /// </summary>
 public static class SlipRenderer
 {
+    /// <summary>
+    /// What a slip says instead of asking for money. No accents on purpose: it has
+    /// to survive a printer whose code page has none.
+    /// </summary>
+    public const string Offer = "OFERTA";
+
     public static IReadOnlyList<SlipTextLine> Render(Slip slip, TicketOptions options) => slip switch
     {
         GroupedSlip grouped => RenderGrouped(grouped, options),
@@ -53,6 +59,12 @@ public static class SlipRenderer
                     : Layout.Truncate(label, columns)));
         }
 
+        // Above the total rather than beside it, and outside the block below,
+        // because a group slip set to hide its total would otherwise hide the one
+        // word that says nobody is paying for this.
+        if (slip.IsOffer)
+            lines.Add(new SlipTextLine(Offer, SlipAlign.Center, SlipStyle.Bold));
+
         if (options.ShowTotalOnGroupSlip || slip.IsSummary)
         {
             AddRule(lines, '-', options);
@@ -83,7 +95,11 @@ public static class SlipRenderer
 
         lines.Add(new SlipTextLine(name, SlipAlign.Center, style));
 
-        if (options.ShowPriceOnSenha)
+        // In the price's place, and printed even where prices are hidden: it is not
+        // a price, it is the reason there is not one.
+        if (slip.IsOffer)
+            lines.Add(new SlipTextLine(Offer, SlipAlign.Center, SlipStyle.DoubleHeight));
+        else if (options.ShowPriceOnSenha)
             lines.Add(new SlipTextLine(Money.Format(slip.PriceCents), SlipAlign.Center, SlipStyle.DoubleHeight));
 
         if (options.ShowRules) lines.Add(new SlipTextLine(""));

@@ -126,6 +126,29 @@
     <Setter Property="Background" Value="#2563EB" />
   </Style>
 
+  <!-- Giving something away. Amber rather than green or blue, because it is the
+       one way out of the till that collects nothing, and it must not read as a
+       second Dinheiro to a thumb going fast. Outlined where it is offered,
+       solid where it is confirmed. -->
+  <Style Selector="Button.offer">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource MoneyDeep}" />
+    <Setter Property="Foreground" Value="{DynamicResource Money}" />
+  </Style>
+  <Style Selector="Button.offer:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#3A2708" />
+  </Style>
+
+  <Style Selector="Button.offer-pay">
+    <Setter Property="Background" Value="{DynamicResource Warning}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Money}" />
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="Button.offer-pay:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#B45309" />
+  </Style>
+
   <Style Selector="Button.danger">
     <Setter Property="Background" Value="{DynamicResource Danger}" />
     <Setter Property="BorderBrush" Value="#F87171" />

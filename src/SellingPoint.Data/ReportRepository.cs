@@ -35,6 +35,14 @@ public sealed record SessionReport
     public required int SalesCount { get; init; }
     public required int CashCents { get; init; }
     public required int CardCents { get; init; }
+
+    /// <summary>
+    /// What was given away, at what it would have been sold for. Deliberately not
+    /// part of <see cref="TotalCents"/>: no money changed hands, so counting it as
+    /// takings would report a drawer that is short by exactly this much.
+    /// </summary>
+    public required int OfferCents { get; init; }
+
     public required IReadOnlyList<ProductSales> Products { get; init; }
     public required IReadOnlyList<CategorySales> Categories { get; init; }
     public required IReadOnlyList<StockLine> Stock { get; init; }
@@ -76,6 +84,7 @@ public sealed record EventReport
     public int SalesCount => Nights.Sum(n => n.SalesCount);
     public int CashCents => Nights.Sum(n => n.CashCents);
     public int CardCents => Nights.Sum(n => n.CardCents);
+    public int OfferCents => Nights.Sum(n => n.OfferCents);
     public int TotalCents => CashCents + CardCents;
 
     public int FloatCents => Nights.Sum(n => n.Session.OpeningFloatCents);
@@ -135,6 +144,9 @@ public sealed class ReportRepository(Db db)
         var card = c.ExecuteScalar<int>(
             "SELECT COALESCE(SUM(total_cents), 0) FROM sale WHERE session_id = @id AND payment_method = 'Card'",
             new { id });
+        var offer = c.ExecuteScalar<int>(
+            "SELECT COALESCE(SUM(total_cents), 0) FROM sale WHERE session_id = @id AND payment_method = 'Offer'",
+            new { id });
         var count = c.ExecuteScalar<int>("SELECT COUNT(*) FROM sale WHERE session_id = @id", new { id });
 
         // Grouped by the snapshotted names, so a product renamed or deleted after
@@ -183,6 +195,7 @@ public sealed class ReportRepository(Db db)
             SalesCount = count,
             CashCents = cash,
             CardCents = card,
+            OfferCents = offer,
             Products = products,
             Categories = categories,
             Stock = stock,
@@ -208,6 +221,10 @@ public sealed class ReportRepository(Db db)
         csv.AppendLine($"Dinheiro;{Money.FormatPlain(report.CashCents)}");
         csv.AppendLine($"Cartão;{Money.FormatPlain(report.CardCents)}");
         csv.AppendLine($"Total;{Money.FormatPlain(report.TotalCents)}");
+
+        if (report.OfferCents != 0)
+            csv.AppendLine($"Ofertas;{Money.FormatPlain(report.OfferCents)}");
+
         csv.AppendLine($"Fundos de caixa;{Money.FormatPlain(report.FloatCents)}");
 
         if (report.CashMovements.Count > 0)
@@ -267,6 +284,10 @@ public sealed class ReportRepository(Db db)
         csv.AppendLine($"Dinheiro;{Money.FormatPlain(report.CashCents)}");
         csv.AppendLine($"Cartão;{Money.FormatPlain(report.CardCents)}");
         csv.AppendLine($"Total;{Money.FormatPlain(report.TotalCents)}");
+
+        if (report.OfferCents != 0)
+            csv.AppendLine($"Ofertas;{Money.FormatPlain(report.OfferCents)}");
+
         csv.AppendLine($"Fundo de caixa;{Money.FormatPlain(report.Session.OpeningFloatCents)}");
 
         if (report.CashMovements.Count > 0)
